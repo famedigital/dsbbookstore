@@ -5,10 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export const metadata = { title: "Enquiry" };
 
-export default function EnquiryPage() {
+export default async function EnquiryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sent?: string }>;
+}) {
+  const { sent } = await searchParams;
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
       <header className="mx-auto flex w-full max-w-xl items-center justify-between px-6 py-6">
@@ -24,11 +31,20 @@ export default function EnquiryPage() {
         <p className="mt-2 text-sm text-muted-foreground">
           Ask about a title, school orders, or store pickup in Thimphu.
         </p>
+
+        {sent === "1" ? (
+          <Alert className="mt-8 border-primary/30 bg-white/90">
+            <AlertDescription>
+              Thank you — your enquiry has been sent. We will reply by email.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {!isSupabaseConfigured() ? (
           <p className="mt-8 text-sm text-muted-foreground">
             Connect Supabase to accept enquiries.
           </p>
-        ) : (
+        ) : sent === "1" ? null : (
           <form action={submitPublicEnquiry} className="mt-8 space-y-4 rounded-lg border bg-white/80 p-6">
             <div className="space-y-1">
               <Label htmlFor="name">Name</Label>

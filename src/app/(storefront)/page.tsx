@@ -39,6 +39,9 @@ export default async function HomePage() {
           <Link href="/books" className="hover:text-primary">
             Catalogue
           </Link>
+          <Link href="/authors" className="hover:text-primary">
+            Authors
+          </Link>
           <Link href="/visit" className="hover:text-primary">
             Visit
           </Link>

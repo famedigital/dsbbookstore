@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff, requireManager, requireOwner } from "@/lib/erp/auth";
 import { orderNumber, poNumber, slugify } from "@/lib/erp/format";
@@ -31,6 +33,9 @@ export async function upsertBook(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   if (!title) throw new Error("Title is required");
 
+  const pageCountRaw = String(formData.get("page_count") || "").trim();
+  const page_count = pageCountRaw ? Number(pageCountRaw) : null;
+
   const payload = {
     title,
     subtitle: String(formData.get("subtitle") || "") || null,
@@ -40,6 +45,7 @@ export async function upsertBook(formData: FormData) {
     language: String(formData.get("language") || "English"),
     format: String(formData.get("format") || "paperback"),
     publisher_name: String(formData.get("publisher_name") || "DSB Publication"),
+    page_count,
     price_btn: Number(formData.get("price_btn") || 0),
     cost_price_btn:
       profile.role === "staff"
@@ -49,6 +55,8 @@ export async function upsertBook(formData: FormData) {
     is_published: formData.get("is_published") === "on",
     is_featured: formData.get("is_featured") === "on",
   };
+
+  let bookId = id;
 
   if (id) {
     const { error } = await supabase.from("books").update(payload).eq("id", id);
@@ -61,11 +69,16 @@ export async function upsertBook(formData: FormData) {
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    bookId = data.id;
     await audit(userId, "book.create", "book", data.id, { title });
   }
 
   revalidatePath("/erp/catalogue");
   revalidatePath("/books");
+  if (bookId) {
+    revalidatePath(`/erp/catalogue/${bookId}`);
+    redirect(`/erp/catalogue/${bookId}`);
+  }
 }
 
 export async function adjustStock(formData: FormData) {
@@ -439,6 +452,254 @@ export async function updateOrderStatus(formData: FormData) {
   if (error) throw new Error(error.message);
   await audit(userId, "order.update", "order", id, { status });
   revalidatePath("/erp/orders");
+  revalidatePath(`/erp/orders/${id}`);
+}
+
+export async function upsertAuthor(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") || "");
+  const name = String(formData.get("name") || "").trim();
+  if (!name) throw new Error("Name is required");
+
+  const payload = {
+    name,
+    slug: String(formData.get("slug") || slugify(name)),
+    bio: String(formData.get("bio") || "") || null,
+  };
+
+  if (id) {
+    const { error } = await supabase.from("authors").update(payload).eq("id", id);
+    if (error) throw new Error(error.message);
+    await audit(userId, "author.update", "author", id, { name });
+  } else {
+    const { data, error } = await supabase
+      .from("authors")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    await audit(userId, "author.create", "author", data.id, { name });
+  }
+
+  revalidatePath("/erp/authors");
+}
+
+export async function upsertCategory(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") || "");
+  const name = String(formData.get("name") || "").trim();
+  if (!name) throw new Error("Name is required");
+
+  const payload = {
+    name,
+    slug: String(formData.get("slug") || slugify(name)),
+    description: String(formData.get("description") || "") || null,
+    sort_order: Number(formData.get("sort_order") || 0),
+  };
+
+  if (id) {
+    const { error } = await supabase.from("categories").update(payload).eq("id", id);
+    if (error) throw new Error(error.message);
+    await audit(userId, "category.update", "category", id, { name });
+  } else {
+    const { data, error } = await supabase
+      .from("categories")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    await audit(userId, "category.create", "category", data.id, { name });
+  }
+
+  revalidatePath("/erp/categories");
+}
+
+export async function setBookAuthors(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const bookId = String(formData.get("book_id"));
+  const authorIds = formData.getAll("author_ids").map(String);
+
+  if (!bookId) throw new Error("Book is required");
+
+  const { error: deleteError } = await supabase
+    .from("book_authors")
+    .delete()
+    .eq("book_id", bookId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (authorIds.length > 0) {
+    const rows = authorIds.map((authorId, index) => ({
+      book_id: bookId,
+      author_id: authorId,
+      sort_order: index,
+    }));
+    const { error } = await supabase.from("book_authors").insert(rows);
+    if (error) throw new Error(error.message);
+  }
+
+  await audit(userId, "book.authors", "book", bookId, { authorIds });
+  revalidatePath(`/erp/catalogue/${bookId}`);
+  revalidatePath("/books");
+}
+
+export async function setBookCategories(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const bookId = String(formData.get("book_id"));
+  const categoryIds = formData.getAll("category_ids").map(String);
+
+  if (!bookId) throw new Error("Book is required");
+
+  const { error: deleteError } = await supabase
+    .from("book_categories")
+    .delete()
+    .eq("book_id", bookId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (categoryIds.length > 0) {
+    const rows = categoryIds.map((categoryId) => ({
+      book_id: bookId,
+      category_id: categoryId,
+    }));
+    const { error } = await supabase.from("book_categories").insert(rows);
+    if (error) throw new Error(error.message);
+  }
+
+  await audit(userId, "book.categories", "book", bookId, { categoryIds });
+  revalidatePath(`/erp/catalogue/${bookId}`);
+  revalidatePath("/books");
+}
+
+export async function unpublishBook(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id"));
+  const { error } = await supabase
+    .from("books")
+    .update({ is_published: false, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "book.unpublish", "book", id);
+  revalidatePath(`/erp/catalogue/${id}`);
+  revalidatePath("/erp/catalogue");
+  revalidatePath("/books");
+}
+
+export async function markPaymentCompleted(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id"));
+  const paidAt = new Date().toISOString();
+
+  const { data: payment, error: fetchError } = await supabase
+    .from("payments")
+    .select("id, order_id")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error } = await supabase
+    .from("payments")
+    .update({ status: "completed", paid_at: paidAt })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("status")
+    .eq("id", payment.order_id)
+    .single();
+
+  if (order?.status === "cod_pending") {
+    await supabase
+      .from("orders")
+      .update({ status: "paid", updated_at: new Date().toISOString() })
+      .eq("id", payment.order_id);
+  }
+
+  await audit(userId, "payment.complete", "payment", id);
+  revalidatePath(`/erp/orders/${payment.order_id}`);
+  revalidatePath("/erp/orders");
+}
+
+export async function inviteStaff(formData: FormData) {
+  const { userId } = await requireOwner();
+
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured. Staff invites require the service role key."
+    );
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured.");
+  }
+
+  const email = String(formData.get("email") || "").trim();
+  const fullName = String(formData.get("full_name") || "").trim();
+  const role = String(formData.get("role") || "staff");
+
+  if (!email) throw new Error("Email is required");
+
+  const adminClient = createSupabaseAdmin(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+    data: { role, full_name: fullName },
+  });
+  if (error) throw new Error(error.message);
+
+  if (data.user?.id) {
+    const supabase = await createClient();
+    const { error: profileError } = await supabase.from("profiles").upsert({
+      id: data.user.id,
+      email,
+      full_name: fullName || null,
+      role,
+      is_active: true,
+      updated_at: new Date().toISOString(),
+    });
+    if (profileError) throw new Error(profileError.message);
+    await audit(userId, "staff.invite", "profile", data.user.id, { email, role });
+  }
+
+  revalidatePath("/erp/staff");
+}
+
+export async function updatePublishingTitle(formData: FormData) {
+  const { userId } = await requireManager();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id"));
+  const workingTitle = String(formData.get("working_title") || "").trim();
+  if (!workingTitle) throw new Error("Working title is required");
+
+  const { error } = await supabase
+    .from("publishing_titles")
+    .update({
+      working_title: workingTitle,
+      stage: String(formData.get("stage") || "idea"),
+      editor_notes: String(formData.get("editor_notes") || "") || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "publishing.update", "publishing_title", id);
+  revalidatePath("/erp/publishing");
 }
 
 export async function submitPublicEnquiry(formData: FormData) {
@@ -461,4 +722,10 @@ export async function submitPublicEnquiry(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/erp/enquiries");
+
+  const bookSlug = String(formData.get("book_slug") || "").trim();
+  if (bookSlug) {
+    redirect(`/books/${bookSlug}?sent=1`);
+  }
+  redirect("/enquiry?sent=1");
 }

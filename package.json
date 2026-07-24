@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

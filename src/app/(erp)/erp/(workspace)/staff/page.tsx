@@ -1,7 +1,8 @@
 import { requireOwner } from "@/lib/erp/auth";
-import { updateStaffRole } from "@/lib/erp/actions";
+import { inviteStaff, updateStaffRole } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -47,6 +48,45 @@ export default async function StaffPage() {
           Manage team roles and access levels.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Invite staff</CardTitle>
+          <CardDescription>
+            Send an email invite to join the ERP team
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={inviteStaff} className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" name="email" type="email" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Full name</Label>
+              <Input id="full_name" name="full_name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <select
+                id="role"
+                name="role"
+                defaultValue="staff"
+                className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
+              >
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end sm:col-span-2">
+              <Button type="submit">Send invite</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

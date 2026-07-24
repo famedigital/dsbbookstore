@@ -27,6 +27,8 @@ export const erpNav: NavItem[] = [
   { title: "POS", href: "/erp/pos", icon: ShoppingCart },
   { title: "Orders", href: "/erp/orders", icon: ClipboardList },
   { title: "Catalogue", href: "/erp/catalogue", icon: BookOpen },
+  { title: "Authors", href: "/erp/authors", icon: PenLine },
+  { title: "Categories", href: "/erp/categories", icon: Library },
   { title: "Inventory", href: "/erp/inventory", icon: Warehouse },
   { title: "Purchasing", href: "/erp/purchasing", icon: Truck },
   { title: "Customers", href: "/erp/customers", icon: Users },
@@ -54,7 +56,7 @@ export const erpNav: NavItem[] = [
     title: "Settings",
     href: "/erp/settings",
     icon: Settings,
-    roles: ["owner", "manager"],
+    roles: ["owner"],
   },
 ];
 

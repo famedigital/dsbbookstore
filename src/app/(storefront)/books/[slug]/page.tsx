@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
@@ -8,17 +9,55 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Book } from "@/types/erp";
 import { Badge } from "@/components/ui/badge";
 
-export default async function BookDetailPage({
+export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  if (!isSupabaseConfigured()) {
+    return { title: "Book" };
+  }
+
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("books")
+    .select("title, subtitle, seo_title, seo_description, description")
+    .eq("slug", slug)
+    .eq("is_published", true)
+    .maybeSingle();
+
+  if (!data) {
+    return { title: "Book not found" };
+  }
+
+  const title = data.seo_title || data.title;
+  const description =
+    data.seo_description ||
+    data.subtitle ||
+    (data.description ? data.description.slice(0, 160) : undefined);
+
+  return {
+    title,
+    description,
+  };
+}
+
+export default async function BookDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ sent?: string }>;
 }) {
   if (!isSupabaseConfigured()) notFound();
 
   const { slug } = await params;
+  const { sent } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase
     .from("books")
@@ -88,32 +127,41 @@ export default async function BookDetailPage({
             </p>
           ) : null}
 
-          <form action={submitPublicEnquiry} className="mt-10 space-y-3 rounded-lg border bg-white/80 p-5">
-            <h2 className="font-heading text-xl">Enquire about this book</h2>
-            <input type="hidden" name="book_id" value={book.id} />
-            <div className="space-y-1">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" required />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" required />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                name="message"
-                required
-                defaultValue={`I would like to enquire about "${book.title}".`}
-              />
-            </div>
-            <Button type="submit">Send enquiry</Button>
-          </form>
+          {sent === "1" ? (
+            <Alert className="mt-10 border-primary/30 bg-white/90">
+              <AlertDescription>
+                Thank you — your enquiry has been sent. We will reply by email.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <form action={submitPublicEnquiry} className="mt-10 space-y-3 rounded-lg border bg-white/80 p-5">
+              <h2 className="font-heading text-xl">Enquire about this book</h2>
+              <input type="hidden" name="book_id" value={book.id} />
+              <input type="hidden" name="book_slug" value={book.slug} />
+              <div className="space-y-1">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" name="name" required />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" required />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" name="phone" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="message">Message</Label>
+                <Textarea
+                  id="message"
+                  name="message"
+                  required
+                  defaultValue={`I would like to enquire about "${book.title}".`}
+                />
+              </div>
+              <Button type="submit">Send enquiry</Button>
+            </form>
+          )}
         </div>
       </div>
     </div>

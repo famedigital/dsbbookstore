@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireStaff } from "@/lib/erp/auth";
 import { updateOrderStatus } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -86,12 +87,13 @@ export default async function OrdersPage() {
                 <TableHead>Total</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Update status</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-muted-foreground">
+                  <TableCell colSpan={8} className="text-muted-foreground">
                     No orders yet.
                   </TableCell>
                 </TableRow>
@@ -99,7 +101,12 @@ export default async function OrdersPage() {
                 list.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell className="font-mono text-xs">
-                      {order.order_number}
+                      <Link
+                        href={`/erp/orders/${order.id}`}
+                        className="hover:underline"
+                      >
+                        {order.order_number}
+                      </Link>
                     </TableCell>
                     <TableCell className="capitalize">{order.channel}</TableCell>
                     <TableCell>
@@ -133,6 +140,11 @@ export default async function OrdersPage() {
                           Save
                         </Button>
                       </form>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/erp/orders/${order.id}`}>View</Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

@@ -13,9 +13,14 @@ export function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/erp";
+  const queryError = search.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    queryError === "not_staff"
+      ? "Your account does not have staff access. Contact the store owner."
+      : null
+  );
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {

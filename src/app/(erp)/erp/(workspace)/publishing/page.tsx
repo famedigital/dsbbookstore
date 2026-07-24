@@ -1,5 +1,5 @@
 import { requireManager } from "@/lib/erp/auth";
-import { createPublishingTitle } from "@/lib/erp/actions";
+import { createPublishingTitle, updatePublishingTitle } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,12 +123,13 @@ export default async function PublishingPage() {
                 <TableHead>Stage</TableHead>
                 <TableHead>Target date</TableHead>
                 <TableHead>Updated</TableHead>
+                <TableHead>Update</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {titleList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-muted-foreground">
+                  <TableCell colSpan={5} className="text-muted-foreground">
                     No publishing titles yet.
                   </TableCell>
                 </TableRow>
@@ -152,6 +153,39 @@ export default async function PublishingPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
                       {new Date(title.updated_at).toLocaleDateString("en-BT")}
+                    </TableCell>
+                    <TableCell>
+                      <form
+                        action={updatePublishingTitle}
+                        className="grid min-w-[280px] gap-2"
+                      >
+                        <input type="hidden" name="id" value={title.id} />
+                        <Input
+                          name="working_title"
+                          defaultValue={title.working_title}
+                          required
+                        />
+                        <select
+                          name="stage"
+                          defaultValue={title.stage}
+                          className="border-input bg-background h-8 rounded-lg border px-2 text-xs"
+                        >
+                          {STAGES.map((s) => (
+                            <option key={s} value={s}>
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </option>
+                          ))}
+                        </select>
+                        <Textarea
+                          name="editor_notes"
+                          rows={2}
+                          defaultValue={title.editor_notes ?? ""}
+                          placeholder="Editor notes"
+                        />
+                        <Button type="submit" size="sm" variant="outline">
+                          Save
+                        </Button>
+                      </form>
                     </TableCell>
                   </TableRow>
                 ))
