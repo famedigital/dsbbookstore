@@ -31,9 +31,11 @@ alter table public.books
 
 alter table public.media_assets enable row level security;
 
+drop policy if exists media_public_read on public.media_assets;
 create policy media_public_read on public.media_assets
   for select using (true);
 
+drop policy if exists media_staff_all on public.media_assets;
 create policy media_staff_all on public.media_assets
   for all using (public.is_staff());
 
