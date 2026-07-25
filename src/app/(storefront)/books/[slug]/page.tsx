@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
+import { bookCoverProps } from "@/lib/media/book-cover-props";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import { submitPublicEnquiry } from "@/lib/erp/actions";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { MediaAsset } from "@/types/media";
 import type { Book } from "@/types/erp";
 import { Badge } from "@/components/ui/badge";
+
+type BookWithCover = Book & { cover?: MediaAsset | null };
 
 export async function generateMetadata({
   params,
@@ -61,13 +65,13 @@ export default async function BookDetailPage({
   const supabase = await createClient();
   const { data } = await supabase
     .from("books")
-    .select("*")
+    .select("*, cover:media_assets!cover_media_id(*)")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();
 
   if (!data) notFound();
-  const book = data as Book;
+  const book = data as BookWithCover;
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
@@ -82,7 +86,7 @@ export default async function BookDetailPage({
 
       <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 pb-20 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <BookCover
-          publicId={book.cover_public_id}
+          {...bookCoverProps(book)}
           alt={book.title}
           width={640}
           height={960}

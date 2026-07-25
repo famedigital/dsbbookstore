@@ -101,6 +101,7 @@ export type Book = {
   low_stock_threshold: number | null;
   availability_status: AvailabilityStatus;
   cover_public_id: string | null;
+  cover_media_id: string | null;
   is_featured: boolean;
   is_published: boolean;
   seo_title: string | null;

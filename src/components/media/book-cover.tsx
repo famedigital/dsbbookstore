@@ -1,10 +1,18 @@
 "use client";
 
 import { CldImage } from "next-cloudinary";
-import { buildCoverUrl } from "@/lib/cloudinary-url";
+import { resolveMediaUrl } from "@/lib/media/url";
+import type { MediaAsset } from "@/types/media";
 
 type Props = {
+  /** Legacy Cloudinary public id */
   publicId?: string | null;
+  cloudinaryId?: string | null;
+  supabaseUrl?: string | null;
+  asset?: Pick<
+    MediaAsset,
+    "storage_provider" | "supabase_url" | "cloudinary_public_id"
+  > | null;
   alt: string;
   width: number;
   height: number;
@@ -31,27 +39,26 @@ function Placeholder({
   );
 }
 
-/** Cloudinary-optimized cover. Falls back to a calm placeholder when unset. */
+/** Cover from media asset, Cloudinary id, or Supabase URL. */
 export function BookCover({
   publicId,
+  cloudinaryId,
+  supabaseUrl,
+  asset,
   alt,
   width,
   height,
   className,
   sizes,
 }: Props) {
-  if (!publicId) {
-    return (
-      <Placeholder alt={alt} width={width} height={height} className={className} />
-    );
-  }
+  const resolvedCloudinary =
+    asset?.cloudinary_public_id || cloudinaryId || publicId || null;
+  const resolvedSupabase = asset?.supabase_url || supabaseUrl || null;
 
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-
-  if (cloudName) {
+  if (resolvedCloudinary && process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
     return (
       <CldImage
-        src={publicId}
+        src={resolvedCloudinary}
         alt={alt}
         width={width}
         height={height}
@@ -65,12 +72,24 @@ export function BookCover({
     );
   }
 
-  const fallbackUrl = buildCoverUrl(publicId, width);
-  if (fallbackUrl) {
+  const url =
+    resolveMediaUrl(
+      asset ??
+        (resolvedCloudinary || resolvedSupabase
+          ? {
+              storage_provider: resolvedCloudinary ? "cloudinary" : "supabase",
+              cloudinary_public_id: resolvedCloudinary,
+              supabase_url: resolvedSupabase,
+            }
+          : null),
+      width
+    ) || resolvedSupabase;
+
+  if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={fallbackUrl}
+        src={url}
         alt={alt}
         width={width}
         height={height}

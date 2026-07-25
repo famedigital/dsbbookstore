@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
+import { bookCoverProps } from "@/lib/media/book-cover-props";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import type { AvailabilityStatus, Book } from "@/types/erp";
+import type { MediaAsset } from "@/types/media";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
+type BookWithCover = Book & { cover?: MediaAsset | null };
 
 export const metadata = { title: "Catalogue" };
 
@@ -34,14 +38,14 @@ export default async function BooksPage({
 }) {
   const { q, format, availability, sort } = await searchParams;
   const sortKey = sort && sort in SORTS ? (sort as keyof typeof SORTS) : "title";
-  let books: Book[] = [];
+  let books: BookWithCover[] = [];
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const { column, ascending } = SORTS[sortKey];
     let query = supabase
       .from("books")
-      .select("*")
+      .select("*, cover:media_assets!cover_media_id(*)")
       .eq("is_published", true)
       .order(column, { ascending });
 
@@ -63,7 +67,7 @@ export default async function BooksPage({
     }
 
     const { data } = await query;
-    books = (data as Book[]) ?? [];
+    books = (data as BookWithCover[]) ?? [];
   }
 
   return (
@@ -72,7 +76,7 @@ export default async function BooksPage({
         <Link href="/" className="font-heading text-2xl font-semibold text-primary">
           DSB Books
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="hidden items-center gap-4 text-sm md:flex">
           <Link href="/authors" className="hover:text-primary">
             Authors
           </Link>
@@ -157,7 +161,7 @@ export default async function BooksPage({
               <li key={book.id}>
                 <Link href={`/books/${book.slug}`} className="group block">
                   <BookCover
-                    publicId={book.cover_public_id}
+                    {...bookCoverProps(book)}
                     alt={book.title}
                     width={400}
                     height={600}

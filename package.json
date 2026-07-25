@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'"
+    "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'",
+    "seed:catalogue": "node scripts/seed-live-catalogue.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -19,6 +20,7 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.26.0",
+    "motion": "^12.42.2",
     "next": "16.2.11",
     "next-cloudinary": "^6.17.5",
     "next-themes": "^0.4.6",
@@ -40,6 +42,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
+    "sharp": "^0.35.3",
     "supabase": "^2.109.1",
     "tailwindcss": "^4",
     "typescript": "^5"
