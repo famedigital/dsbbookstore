@@ -1,49 +1,42 @@
 # Implemented vs planned
 
-Status matrix from [02 — Product & tech plan](./02-complete-product-tech-plan.md). Updated for current codebase.
+Updated for **Production Upgrade** ([08](./08-production-upgrade-plan.md)).
 
-| Feature | Planned | Status | Notes |
+| Feature | Phase | Status | Notes |
 | --- | --- | --- | --- |
 | **Storefront** | | | |
-| Home + featured books | M1 | Done | Live Supabase |
-| Books list + search | M1 | Done | `q` param |
-| Filters (format, availability) | M1 | Done | Query params |
-| Sort (newest, title, price) | M1 | Done | |
-| Book detail + enquiry | M1 | Done | Redirect `?sent=1` |
-| Authors index + detail | M1 | Done | `book_authors` join |
-| Visit page | M1 | Done | |
-| Privacy / terms | M1 | Done | Static pages |
-| SEO metadata per book | M1 | Done | `generateMetadata` |
-| Schema.org / sitemap | M1 | Partial | Not yet |
-| Categories / collections public | M1 | Planned | ERP CRUD only |
-| Luxury motion / design pass | M1 | Partial | Base theme in place |
+| Home + catalogue + enquiry | Soft | Done | Live Supabase |
+| Authors pages | Soft | Done | |
+| Filters / sort | Soft | Done | |
+| Privacy / terms | Soft | Done | |
+| Mobile bottom nav template | Prod | Done | Storefront bottom nav |
+| PWA + install notification | Prod | Done | manifest + SW + banner |
+| Luxury design / motion pass | Prod | Partial | Tokens + mobile shell |
+| Public collections | Soft | Planned | |
+| Schema.org / sitemap | Soft | Planned | |
+| **Media** | | | |
+| AI images → Supabase Storage | Prod | Done | Needs `AI_IMAGE_API_KEY` |
+| ERP Media Library | Prod | Done | `/erp/media` |
+| Migrate Supabase → Cloudinary + delete | Prod | Done | Manager+ action |
+| Legacy Cloudinary public_id | MVP | Done | Kept for compat |
 | **ERP** | | | |
-| Auth + role guard | M2 | Done | Middleware + `requireStaff` |
-| Catalogue CRUD | M2 | Done | New/edit/list |
-| Authors / categories CRUD | M2 | Done | ERP pages |
-| Inventory ledger | M2 | Done | `stock_movements` |
-| POS | M2 | Done | |
-| Orders | M2 | Done | |
-| Purchasing + GRN | M2 | Done | Manager+ |
-| Customers | M2 | Done | |
-| Enquiries inbox | M2 | Done | |
-| Finance / expenses | M2 | Done | Manager+ |
-| Publishing pipeline | M2 | Done | Manager+ |
-| Reports | M2 | Done | Basic |
-| Staff management | M2 | Done | Owner |
-| Store settings | M2 | Done | Owner |
-| Cover upload (Cloudinary) | M2 | Done | Signed upload |
+| Catalogue / authors / categories | Soft | Done | |
+| Inventory ledger | Soft | Done | |
+| POS sell | Soft | Done | |
+| POS sessions + receipt | Prod | Partial | Open/close session done; receipt next |
+| Orders detail + COD complete | Soft | Done | |
+| Multi-line PO + partial receive | Prod | Planned | |
+| Customers history | Prod | Planned | |
+| Enquiries convert + email | Prod | Planned | |
+| Finance + cash-up | Prod | Partial | |
+| Publishing + print/royalty UI | Prod | Partial | |
+| Staff invite + audit viewer | Prod | Partial | Invite done |
+| Reports CSV / margin | Prod | Partial | Basic reports |
 | **Infra** | | | |
-| Supabase schema + RLS | M0 | Done | Single migration |
-| Cloudinary integration | M0 | Done | Sign route + upload |
-| Vercel deploy | M0 | Ready | Env-driven |
-| No mock data | M0 | Done | |
-| **Phase 2 (commerce)** | | | |
-| Cart / checkout | M4 | Planned | |
-| Online payments | M4 | Planned | |
-| Customer accounts | M5 | Planned | |
-| Email notifications | M4 | Planned | |
-| CSV import | M5 | Planned | |
-| Analytics | M3 | Planned | |
+| Supabase schema + RLS | Soft | Done | |
+| No mock data | Soft | Done | |
+| Vercel public domain | Soft | Blocked | Dashboard alias/SSO |
+| **Commerce Phase 2** | | | |
+| Cart / checkout / payments | Later | Planned | |
 
-**Legend:** Done = shipped in repo · Partial = started · Planned = not built · Ready = documented, deploy-only
+**Legend:** Done · In progress · Partial · Planned · Blocked

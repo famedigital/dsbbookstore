@@ -112,6 +112,88 @@ export async function adjustStock(formData: FormData) {
   revalidatePath("/erp/catalogue");
 }
 
+export async function openPosSession(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const openingFloat = Number(formData.get("opening_float") ?? 0);
+  if (Number.isNaN(openingFloat) || openingFloat < 0) {
+    throw new Error("Opening float must be a non-negative number");
+  }
+
+  const { data: existing } = await supabase
+    .from("pos_sessions")
+    .select("id")
+    .eq("opened_by", userId)
+    .is("closed_at", null)
+    .maybeSingle();
+
+  if (existing) {
+    throw new Error("You already have an open POS session");
+  }
+
+  const { data, error } = await supabase
+    .from("pos_sessions")
+    .insert({
+      opened_by: userId,
+      opening_float_btn: openingFloat,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "pos.session.open", "pos_session", data.id, {
+    opening_float_btn: openingFloat,
+  });
+
+  revalidatePath("/erp/pos");
+}
+
+export async function closePosSession(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+
+  const sessionId = String(formData.get("session_id") || "").trim();
+  const closingCash = Number(formData.get("closing_cash") ?? 0);
+  const notes = String(formData.get("notes") || "").trim() || null;
+
+  if (!sessionId) throw new Error("session_id is required");
+  if (Number.isNaN(closingCash) || closingCash < 0) {
+    throw new Error("Closing cash must be a non-negative number");
+  }
+
+  const { data: session, error: findError } = await supabase
+    .from("pos_sessions")
+    .select("id, opened_by, closed_at")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (findError) throw new Error(findError.message);
+  if (!session) throw new Error("POS session not found");
+  if (session.closed_at) throw new Error("Session already closed");
+  if (session.opened_by !== userId) {
+    throw new Error("You can only close your own POS session");
+  }
+
+  const { error } = await supabase
+    .from("pos_sessions")
+    .update({
+      closed_at: new Date().toISOString(),
+      closing_cash_btn: closingCash,
+      notes,
+    })
+    .eq("id", sessionId);
+
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "pos.session.close", "pos_session", sessionId, {
+    closing_cash_btn: closingCash,
+  });
+
+  revalidatePath("/erp/pos");
+}
+
 export async function createPosSale(input: {
   items: { bookId: string; title: string; qty: number; unitPrice: number; unitCost: number }[];
   paymentMethod: PaymentMethod;
@@ -129,6 +211,13 @@ export async function createPosSale(input: {
   );
   const number = orderNumber();
 
+  const { data: openSession } = await supabase
+    .from("pos_sessions")
+    .select("id")
+    .eq("opened_by", userId)
+    .is("closed_at", null)
+    .maybeSingle();
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
@@ -141,6 +230,7 @@ export async function createPosSale(input: {
       subtotal_btn: subtotal,
       total_btn: subtotal,
       created_by: userId,
+      pos_session_id: openSession?.id ?? null,
     })
     .select("id")
     .single();

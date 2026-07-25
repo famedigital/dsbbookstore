@@ -58,6 +58,15 @@ on conflict (id) do update set role = 'owner', is_active = true;
 
 Roles: `owner` · `manager` · `staff`. Middleware blocks ERP unless profile role is staff-capable.
 
+## Media (Supabase Storage first)
+
+1. Apply `supabase/migrations/20260725000001_media_assets.sql`.
+2. Ensure a **public** Storage bucket named `media` exists (SQL in that migration era / dashboard).
+3. Optional: set `AI_IMAGE_API_KEY` for AI cover generation in `/erp/media`.
+4. Optional: Cloudinary keys to **migrate** hot images from Supabase → CDN (ERP action).
+
+See [10 — Media pipeline](./10-media-pipeline.md).
+
 ## Cloudinary setup
 
 1. Create a Cloudinary cloud; note cloud name, API key, secret.

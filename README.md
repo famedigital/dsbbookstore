@@ -1,58 +1,39 @@
 # DSB Book Store
 
-Luxury digital catalogue + **staff/owner ERP** for DSB Books (Thimphu, Bhutan).
+Luxury digital catalogue + **full production ERP** for DSB Books (Thimphu, Bhutan).
 
-## What you get
+## Surfaces
 
 | Surface | Purpose |
 | --- | --- |
-| `/` public site | Catalogue, authors, search, availability, enquiries |
-| `/erp` | ERP for staff & owners |
+| `/` public (PWA) | Mobile-first catalogue, authors, enquiries, installable app |
+| `/erp` | Full staff/owner ERP — POS, inventory, purchasing, media library |
 
-### ERP modules
-Dashboard · POS · Orders · Catalogue · Inventory · Purchasing · Customers · Enquiries · Finance · Publishing · Reports · Staff · Settings
+## Production upgrade (in progress)
 
-Roles: **owner** · **manager** · **staff** (see [docs/03-erp-suite.md](./docs/03-erp-suite.md))
+See **[docs/08-production-upgrade-plan.md](./docs/08-production-upgrade-plan.md)** for the master roadmap:
+
+- Full ERP production mode  
+- Mobile template + **PWA install notification**  
+- **AI images → Supabase Storage first**, migrate to Cloudinary from ERP  
+- Design system (premium Blue / Gold / Green)
 
 ## Stack
-Next.js · shadcn/ui · Supabase · Cloudinary · Vercel  
-Theme: premium Blue / Yellow / Green  
-**No mock data** — live Supabase only.
+Next.js · shadcn/ui · Supabase (DB + Storage) · Cloudinary (optional CDN) · Vercel · PWA  
+**No mock data.**
 
 ## Getting started
 
-1. **Clone and install**
-   ```bash
-   npm install
-   cp .env.example .env.local
-   ```
+```bash
+npm install
+cp .env.example .env.local
+# Apply supabase/migrations/*.sql in Supabase SQL editor
+npm run dev
+```
 
-2. **Supabase** — create a project and run the migration:
-   ```bash
-   npm run db:migrate   # shows where to apply SQL
-   ```
-   Apply `supabase/migrations/20260723000001_erp_core.sql` in the SQL editor.
+- Storefront: http://localhost:3000  
+- ERP: http://localhost:3000/erp/login  
 
-3. **Owner user** — create an Auth user, then set `profiles.role` to `owner` (see [docs/05-developer-guide.md](./docs/05-developer-guide.md)).
-
-4. **Env** — fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and optional Cloudinary keys in `.env.local`.
-
-5. **Run**
-   ```bash
-   npm run dev
-   ```
-   - Storefront: [http://localhost:3000](http://localhost:3000)
-   - ERP login: [http://localhost:3000/erp/login](http://localhost:3000/erp/login)
-
-## Documentation
-
-| Doc | Topic |
-| --- | --- |
-| [Developer guide](./docs/05-developer-guide.md) | Setup, env, conventions, deploy |
-| [ERP module map](./docs/06-erp-module-map.md) | Routes and permissions |
-| [Implemented vs planned](./docs/07-implemented-vs-planned.md) | Feature status |
-| [Full doc index](./docs/README.md) | All planning & technical docs |
-
-## Deploy
-
-Push to GitHub → import on Vercel → set env vars → apply migration on production Supabase → create owner profile.
+## Docs
+Start here: [docs/README.md](./docs/README.md)  
+Status: [docs/07-implemented-vs-planned.md](./docs/07-implemented-vs-planned.md)
