@@ -7,6 +7,7 @@ import type { AvailabilityStatus, Book } from "@/types/erp";
 import type { MediaAsset } from "@/types/media";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
 type BookWithCover = Book & { cover?: MediaAsset | null };
 
@@ -71,25 +72,19 @@ export default async function BooksPage({
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <nav className="hidden items-center gap-4 text-sm md:flex">
-          <Link href="/authors" className="hover:text-primary">
-            Authors
-          </Link>
-          <Link href="/" className="text-muted-foreground hover:text-primary">
-            Home
-          </Link>
-        </nav>
-      </header>
+    <div className="min-h-screen bg-[linear-gradient(165deg,#f3f6fb_0%,#f7f4ec_55%,#eef5f1_100%)]">
+      <StorefrontHeader />
 
-      <div className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <h1 className="font-heading text-4xl font-semibold">Catalogue</h1>
-        <p className="mt-2 text-muted-foreground">
-          Search DSB publications and check live shelf availability.
+      <div className="mx-auto w-full max-w-6xl px-5 pb-20 pt-10 md:px-8">
+        <p className="text-xs tracking-[0.22em] text-primary/70 uppercase">
+          Live stock
+        </p>
+        <h1 className="mt-2 font-heading text-4xl font-semibold md:text-5xl">
+          Catalogue
+        </h1>
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          DSB Publication titles and international favourites — search and check
+          what&apos;s on the Thimphu shelf today.
         </p>
 
         <form className="mt-8 space-y-4">
@@ -98,7 +93,7 @@ export default async function BooksPage({
               name="q"
               defaultValue={q}
               placeholder="Title, ISBN, or keyword"
-              className="bg-white"
+              className="bg-white/90"
             />
             <Button type="submit">Search</Button>
           </div>
@@ -108,7 +103,7 @@ export default async function BooksPage({
               <select
                 name="format"
                 defaultValue={format ?? ""}
-                className="border-input bg-white flex h-9 rounded-md border px-3 text-sm"
+                className="border-input flex h-9 rounded-md border bg-white/90 px-3 text-sm"
               >
                 <option value="">All formats</option>
                 {FORMATS.map((f) => (
@@ -123,7 +118,7 @@ export default async function BooksPage({
               <select
                 name="availability"
                 defaultValue={availability ?? ""}
-                className="border-input bg-white flex h-9 rounded-md border px-3 text-sm"
+                className="border-input flex h-9 rounded-md border bg-white/90 px-3 text-sm"
               >
                 <option value="">Any status</option>
                 {AVAILABILITY.map((a) => (
@@ -138,7 +133,7 @@ export default async function BooksPage({
               <select
                 name="sort"
                 defaultValue={sortKey}
-                className="border-input bg-white flex h-9 rounded-md border px-3 text-sm"
+                className="border-input flex h-9 rounded-md border bg-white/90 px-3 text-sm"
               >
                 <option value="newest">Newest</option>
                 <option value="title">Title</option>
@@ -156,21 +151,26 @@ export default async function BooksPage({
             Supabase is not connected — catalogue unavailable (no mock data).
           </p>
         ) : (
-          <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-12 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
             {books.map((book) => (
               <li key={book.id}>
                 <Link href={`/books/${book.slug}`} className="group block">
-                  <BookCover
-                    {...bookCoverProps(book)}
-                    alt={book.title}
-                    width={400}
-                    height={600}
-                    className="aspect-[2/3] w-full rounded-sm object-cover shadow-md"
-                  />
-                  <h2 className="mt-3 font-heading text-lg group-hover:text-primary">
+                  <div className="overflow-hidden shadow-[0_18px_40px_-28px_rgba(11,61,145,0.5)] transition duration-500 group-hover:-translate-y-1">
+                    <BookCover
+                      {...bookCoverProps(book)}
+                      alt={book.title}
+                      width={400}
+                      height={600}
+                      className="aspect-[2/3] w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <h2 className="mt-3 font-heading text-base leading-snug group-hover:text-primary md:text-lg">
                     {book.title}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {book.publisher_name}
+                  </p>
+                  <p className="mt-0.5 text-sm text-foreground/85">
                     {formatBtn(book.price_btn)} ·{" "}
                     {availabilityLabel(book.availability_status)}
                   </p>
