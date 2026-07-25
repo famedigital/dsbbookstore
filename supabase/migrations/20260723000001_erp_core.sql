@@ -563,51 +563,90 @@ alter table public.royalty_agreements enable row level security;
 alter table public.royalty_payouts enable row level security;
 
 -- Public read published catalogue
+drop policy if exists books_public_read on public.books;
 create policy books_public_read on public.books for select using (is_published = true or public.is_staff());
+drop policy if exists authors_public_read on public.authors;
 create policy authors_public_read on public.authors for select using (true);
+drop policy if exists categories_public_read on public.categories;
 create policy categories_public_read on public.categories for select using (true);
+drop policy if exists collections_public_read on public.collections;
 create policy collections_public_read on public.collections for select using (true);
+drop policy if exists book_authors_public_read on public.book_authors;
 create policy book_authors_public_read on public.book_authors for select using (true);
+drop policy if exists book_categories_public_read on public.book_categories;
 create policy book_categories_public_read on public.book_categories for select using (true);
+drop policy if exists collection_books_public_read on public.collection_books;
 create policy collection_books_public_read on public.collection_books for select using (true);
+drop policy if exists store_settings_public_read on public.store_settings;
 create policy store_settings_public_read on public.store_settings for select using (true);
 
 -- Public insert enquiries
+drop policy if exists enquiries_public_insert on public.enquiries;
 create policy enquiries_public_insert on public.enquiries for insert with check (true);
+drop policy if exists enquiries_staff_all on public.enquiries;
 create policy enquiries_staff_all on public.enquiries for all using (public.is_staff());
 
 -- Staff write policies
+drop policy if exists books_staff_write on public.books;
 create policy books_staff_write on public.books for all using (public.is_staff());
+drop policy if exists authors_staff_write on public.authors;
 create policy authors_staff_write on public.authors for all using (public.is_staff());
+drop policy if exists categories_staff_write on public.categories;
 create policy categories_staff_write on public.categories for all using (public.is_staff());
+drop policy if exists collections_staff_write on public.collections;
 create policy collections_staff_write on public.collections for all using (public.is_staff());
+drop policy if exists book_authors_staff_write on public.book_authors;
 create policy book_authors_staff_write on public.book_authors for all using (public.is_staff());
+drop policy if exists book_categories_staff_write on public.book_categories;
 create policy book_categories_staff_write on public.book_categories for all using (public.is_staff());
+drop policy if exists collection_books_staff_write on public.collection_books;
 create policy collection_books_staff_write on public.collection_books for all using (public.is_staff());
 
+drop policy if exists suppliers_staff on public.suppliers;
 create policy suppliers_staff on public.suppliers for all using (public.is_staff());
+drop policy if exists po_staff on public.purchase_orders;
 create policy po_staff on public.purchase_orders for all using (public.is_staff());
+drop policy if exists poi_staff on public.purchase_order_items;
 create policy poi_staff on public.purchase_order_items for all using (public.is_staff());
+drop policy if exists gr_staff on public.goods_receipts;
 create policy gr_staff on public.goods_receipts for all using (public.is_staff());
+drop policy if exists gri_staff on public.goods_receipt_items;
 create policy gri_staff on public.goods_receipt_items for all using (public.is_staff());
+drop policy if exists stock_staff on public.stock_movements;
 create policy stock_staff on public.stock_movements for all using (public.is_staff());
+drop policy if exists customers_staff on public.customers;
 create policy customers_staff on public.customers for all using (public.is_staff());
+drop policy if exists pos_staff on public.pos_sessions;
 create policy pos_staff on public.pos_sessions for all using (public.is_staff());
+drop policy if exists orders_staff on public.orders;
 create policy orders_staff on public.orders for all using (public.is_staff());
+drop policy if exists order_items_staff on public.order_items;
 create policy order_items_staff on public.order_items for all using (public.is_staff());
+drop policy if exists payments_staff on public.payments;
 create policy payments_staff on public.payments for all using (public.is_staff());
 
+drop policy if exists expenses_manager on public.expenses;
 create policy expenses_manager on public.expenses for all using (public.is_manager_or_owner());
+drop policy if exists audit_manager on public.audit_logs;
 create policy audit_manager on public.audit_logs for select using (public.is_manager_or_owner());
+drop policy if exists audit_staff_insert on public.audit_logs;
 create policy audit_staff_insert on public.audit_logs for insert with check (public.is_staff());
+drop policy if exists publishing_manager on public.publishing_titles;
 create policy publishing_manager on public.publishing_titles for all using (public.is_manager_or_owner());
+drop policy if exists print_runs_manager on public.print_runs;
 create policy print_runs_manager on public.print_runs for all using (public.is_manager_or_owner());
+drop policy if exists royalty_manager on public.royalty_agreements;
 create policy royalty_manager on public.royalty_agreements for all using (public.is_manager_or_owner());
+drop policy if exists royalty_payouts_manager on public.royalty_payouts;
 create policy royalty_payouts_manager on public.royalty_payouts for all using (public.is_manager_or_owner());
+drop policy if exists settings_owner on public.store_settings;
 create policy settings_owner on public.store_settings for update using (public.is_owner());
 
+drop policy if exists profiles_read_own on public.profiles;
 create policy profiles_read_own on public.profiles for select using (auth.uid() = id or public.is_manager_or_owner());
+drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own on public.profiles for update using (auth.uid() = id or public.is_owner());
+drop policy if exists profiles_owner_all on public.profiles;
 create policy profiles_owner_all on public.profiles for all using (public.is_owner());
 
 -- Search indexes
