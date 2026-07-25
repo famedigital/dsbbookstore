@@ -11,6 +11,10 @@ import {
   StaggerItem,
 } from "@/components/storefront/motion";
 import { StorefrontHeader } from "@/components/storefront/storefront-header";
+import {
+  HeroCarousel,
+  type HeroSlide,
+} from "@/components/storefront/hero-carousel";
 import type { Author, Book } from "@/types/erp";
 import type { MediaAsset } from "@/types/media";
 
@@ -68,6 +72,15 @@ export default async function HomePage() {
   }
 
   const shelf = featured.length > 0 ? featured : arrivals;
+  const heroSlides: HeroSlide[] = arrivals.slice(0, 6).map((book) => ({
+    slug: book.slug,
+    title: book.title,
+    subtitle: book.subtitle ?? book.book_authors?.[0]?.authors?.name ?? null,
+    priceLabel: formatBtn(book.price_btn),
+    availabilityLabel: availabilityLabel(book.availability_status),
+    inStock: book.availability_status === "in_stock",
+    cover: bookCoverProps(book),
+  }));
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f3f6fb_0%,#eef5f1_48%,#f7f4ec_100%)]">
@@ -188,42 +201,24 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* New arrivals strip */}
-      {arrivals.length > 0 ? (
-        <section className="border-y border-primary/10 bg-white/40 py-16 md:py-20">
+      {/* New books — auto-sliding advertisement panel */}
+      {heroSlides.length > 0 ? (
+        <section className="border-y border-primary/10 bg-white/40 py-14 md:py-20">
           <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
-            <FadeIn className="mb-8" y={10}>
+            <FadeIn className="mb-6 md:mb-8" y={10}>
               <p className="text-xs tracking-[0.22em] text-secondary uppercase">
                 Just in
               </p>
               <h2 className="mt-2 font-heading text-3xl font-semibold md:text-4xl">
-                New arrivals
+                New books
               </h2>
             </FadeIn>
-            <Stagger className="flex gap-5 overflow-x-auto pb-2 md:grid md:grid-cols-4 md:gap-8 md:overflow-visible">
-              {arrivals.slice(0, 4).map((book) => (
-                <StaggerItem
-                  key={book.id}
-                  className="w-[42vw] shrink-0 sm:w-48 md:w-auto"
-                >
-                  <Link href={`/books/${book.slug}`} className="group block">
-                    <BookCover
-                      {...bookCoverProps(book)}
-                      alt={book.title}
-                      width={400}
-                      height={600}
-                      className="aspect-[2/3] w-full object-cover shadow-md transition duration-500 group-hover:scale-[1.02]"
-                    />
-                    <h3 className="mt-3 font-heading text-base leading-snug group-hover:text-primary">
-                      {book.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatBtn(book.price_btn)}
-                    </p>
-                  </Link>
-                </StaggerItem>
-              ))}
-            </Stagger>
+            <FadeIn y={12}>
+              <HeroCarousel
+                slides={heroSlides}
+                eyebrow={`New at ${storeName} · Thimphu`}
+              />
+            </FadeIn>
           </div>
         </section>
       ) : null}
