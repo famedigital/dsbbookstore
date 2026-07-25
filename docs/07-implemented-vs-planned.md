@@ -13,7 +13,7 @@ Updated for **Production Upgrade** ([08](./08-production-upgrade-plan.md)).
 | PWA + install notification | Prod | Done | manifest + SW + banner |
 | Luxury design / motion pass | Prod | Partial | Tokens + mobile shell |
 | Public collections | Soft | Planned | |
-| Schema.org / sitemap | Soft | Planned | |
+| Schema.org / sitemap | Soft | Partial | Sitemap done; Schema.org still planned |
 | **Media** | | | |
 | AI images → Supabase Storage | Prod | Done | Needs `AI_IMAGE_API_KEY` |
 | ERP Media Library | Prod | Done | `/erp/media` |
@@ -23,19 +23,19 @@ Updated for **Production Upgrade** ([08](./08-production-upgrade-plan.md)).
 | Catalogue / authors / categories | Soft | Done | |
 | Inventory ledger | Soft | Done | |
 | POS sell | Soft | Done | |
-| POS sessions + receipt | Prod | Partial | Open/close session done; receipt next |
+| POS sessions + receipt | Prod | Done | Open/close session + receipt print view |
 | Orders detail + COD complete | Soft | Done | |
-| Multi-line PO + partial receive | Prod | Planned | |
-| Customers history | Prod | Planned | |
-| Enquiries convert + email | Prod | Planned | |
+| Multi-line PO + partial receive | Prod | Done | Multi-line PO editor + partial receive on PO detail |
+| Customers history | Prod | Done | `/erp/customers/[id]` edit + order history |
+| Enquiries convert + email | Prod | Partial | Convert/assign in UI; Resend email notify still planned |
 | Finance + cash-up | Prod | Partial | |
-| Publishing + print/royalty UI | Prod | Partial | |
-| Staff invite + audit viewer | Prod | Partial | Invite done |
-| Reports CSV / margin | Prod | Partial | Basic reports |
+| Publishing + print/royalty UI | Prod | Partial | Pipeline done; print/royalty UI planned |
+| Staff invite + audit viewer | Prod | Done | Invite + `/erp/audit` for managers/owners |
+| Reports CSV / margin | Prod | Done | 30-day metrics, margin column, CSV export |
 | **Infra** | | | |
 | Supabase schema + RLS | Soft | Done | |
 | No mock data | Soft | Done | |
-| Vercel public domain | Soft | Blocked | Dashboard alias/SSO |
+| Vercel public domain | Soft | Planned | |
 | **Commerce Phase 2** | | | |
 | Cart / checkout / payments | Later | Planned | |
 

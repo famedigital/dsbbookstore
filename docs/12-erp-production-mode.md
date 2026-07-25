@@ -19,8 +19,8 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 ### 2. POS `/erp/pos` — PRODUCTION
 - [x] Search + cart + pay  
 - [ ] ISBN barcode-friendly search  
-- [ ] Open/close **POS session** (float in/out)  
-- [ ] Receipt view (print / WhatsApp share text)  
+- [x] Open/close **POS session** (float in/out)  
+- [x] Receipt view (print / WhatsApp share text)  
 - [ ] Hold cart / resume  
 - [ ] Mobile full-screen charge sheet  
 
@@ -37,11 +37,11 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 - [ ] Duplicate title  
 
 ### 5. Media Library `/erp/media` — NEW
-- [ ] Grid of Supabase / Cloudinary assets  
-- [ ] AI generate → Supabase  
-- [ ] Upload → Supabase  
-- [ ] Migrate → Cloudinary + delete Supabase  
-- [ ] Attach to book  
+- [x] Grid of Supabase / Cloudinary assets  
+- [x] AI generate → Supabase  
+- [x] Upload → Supabase  
+- [x] Migrate → Cloudinary + delete Supabase  
+- [x] Attach to book  
 
 ### 6. Inventory `/erp/inventory`
 - [x] Adjust + ledger + low stock  
@@ -50,19 +50,19 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 
 ### 7. Purchasing `/erp/purchasing`
 - [x] Single-line PO + receive all  
-- [ ] Multi-line PO editor  
-- [ ] Partial receive quantities  
+- [x] Multi-line PO editor  
+- [x] Partial receive quantities  
 - [ ] Supplier edit/deactivate  
 
 ### 8. Customers `/erp/customers`
 - [x] Create + list  
-- [ ] Edit + purchase history  
+- [x] Edit + purchase history  
 - [ ] Link from enquiry  
 
 ### 9. Enquiries `/erp/enquiries`
 - [x] Inbox + status  
-- [ ] Assign to staff  
-- [ ] Convert to customer / draft order  
+- [x] Assign to staff  
+- [x] Convert to customer / draft order  
 - [ ] Email notify (Resend)  
 
 ### 10. Finance `/erp/finance`
@@ -76,12 +76,12 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 
 ### 12. Reports `/erp/reports`
 - [x] Basic 30-day  
-- [ ] Export CSV  
-- [ ] Margin by title (owner/manager)  
+- [x] Export CSV  
+- [x] Margin by title (owner/manager)  
 
-### 13. Staff `/erp/staff`
+### 13. Staff `/erp/staff` + Audit `/erp/audit`
 - [x] Invite + roles  
-- [ ] Audit log viewer  
+- [x] Audit log viewer  
 
 ### 14. Settings `/erp/settings`
 - [x] Store profile  
@@ -101,4 +101,4 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 3. POS sessions + receipt  
 4. Multi-line purchasing  
 5. Customer history + enquiry convert  
-6. Reports export + audit UI  
+6. Reports export + audit UI ✅  

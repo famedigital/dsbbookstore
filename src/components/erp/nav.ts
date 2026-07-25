@@ -8,6 +8,7 @@ import {
   Library,
   PackageSearch,
   PenLine,
+  ScrollText,
   Settings,
   ShoppingCart,
   Truck,
@@ -48,6 +49,12 @@ export const erpNav: NavItem[] = [
     roles: ["owner", "manager"],
   },
   { title: "Reports", href: "/erp/reports", icon: Library },
+  {
+    title: "Audit",
+    href: "/erp/audit",
+    icon: ScrollText,
+    roles: ["owner", "manager"],
+  },
   {
     title: "Staff",
     href: "/erp/staff",
