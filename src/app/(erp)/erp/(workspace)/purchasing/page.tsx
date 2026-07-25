@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { requireManager } from "@/lib/erp/auth";
 import {
   createPurchaseOrder,
-  createSupplier,
-  receivePurchaseOrder,
+  upsertSupplier,
 } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
+import { PoLineEditor } from "@/components/erp/po-line-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,7 +47,7 @@ export default async function PurchasingPage() {
     ]);
 
   const supplierList = (suppliers ?? []) as Supplier[];
-  const bookOptions = books ?? [];
+  const bookOptions = (books ?? []) as { id: string; title: string }[];
   const poList = (purchaseOrders ?? []) as PoRow[];
 
   return (
@@ -67,7 +68,7 @@ export default async function PurchasingPage() {
             <CardDescription>Register a new vendor</CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={createSupplier} className="space-y-4">
+            <form action={upsertSupplier} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" name="name" required />
@@ -106,51 +107,16 @@ export default async function PurchasingPage() {
                   className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
                 >
                   <option value="">No supplier</option>
-                  {supplierList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
+                  {supplierList
+                    .filter((s) => s.is_active)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
                 </select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="book_id">Book</Label>
-                <select
-                  id="book_id"
-                  name="book_id"
-                  required
-                  className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
-                >
-                  <option value="">Select a book…</option>
-                  {bookOptions.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="qty_ordered">Quantity</Label>
-                  <Input
-                    id="qty_ordered"
-                    name="qty_ordered"
-                    type="number"
-                    min="1"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="unit_cost_btn">Unit cost (BTN)</Label>
-                  <Input
-                    id="unit_cost_btn"
-                    name="unit_cost_btn"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
+              <PoLineEditor books={bookOptions} />
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea id="notes" name="notes" rows={2} />
@@ -175,12 +141,13 @@ export default async function PurchasingPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Active</TableHead>
+                <TableHead>Edit</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {supplierList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
+                  <TableCell colSpan={6} className="text-muted-foreground">
                     No suppliers yet.
                   </TableCell>
                 </TableRow>
@@ -201,6 +168,47 @@ export default async function PurchasingPage() {
                       <Badge variant={s.is_active ? "default" : "outline"}>
                         {s.is_active ? "Yes" : "No"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <form
+                        action={upsertSupplier}
+                        className="flex flex-col gap-2 sm:min-w-[16rem]"
+                      >
+                        <input type="hidden" name="id" value={s.id} />
+                        <Input
+                          name="name"
+                          defaultValue={s.name}
+                          required
+                          aria-label="Supplier name"
+                        />
+                        <Input
+                          name="contact_name"
+                          defaultValue={s.contact_name ?? ""}
+                          placeholder="Contact"
+                          aria-label="Contact name"
+                        />
+                        <input
+                          type="hidden"
+                          name="email"
+                          value={s.email ?? ""}
+                        />
+                        <input
+                          type="hidden"
+                          name="phone"
+                          value={s.phone ?? ""}
+                        />
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            name="is_active"
+                            defaultChecked={s.is_active}
+                          />
+                          Active
+                        </label>
+                        <Button type="submit" size="sm" variant="outline">
+                          Save
+                        </Button>
+                      </form>
                     </TableCell>
                   </TableRow>
                 ))
@@ -237,7 +245,12 @@ export default async function PurchasingPage() {
                 poList.map((po) => (
                   <TableRow key={po.id}>
                     <TableCell className="font-mono text-xs">
-                      {po.po_number}
+                      <Link
+                        href={`/erp/purchasing/${po.id}`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {po.po_number}
+                      </Link>
                     </TableCell>
                     <TableCell>{po.suppliers?.name ?? "—"}</TableCell>
                     <TableCell>
@@ -251,21 +264,14 @@ export default async function PurchasingPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      {po.status !== "received" ? (
-                        <form action={receivePurchaseOrder}>
-                          <input
-                            type="hidden"
-                            name="purchase_order_id"
-                            value={po.id}
-                          />
-                          <Button type="submit" size="sm" variant="outline">
-                            Receive
-                          </Button>
-                        </form>
+                      {po.status === "ordered" || po.status === "partial" ? (
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/erp/purchasing/${po.id}`}>Open</Link>
+                        </Button>
                       ) : (
-                        <span className="text-muted-foreground text-xs">
-                          Received
-                        </span>
+                        <Button size="sm" variant="ghost" asChild>
+                          <Link href={`/erp/purchasing/${po.id}`}>View</Link>
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>

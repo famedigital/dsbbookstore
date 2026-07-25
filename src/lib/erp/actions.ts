@@ -323,9 +323,12 @@ export async function upsertCustomer(formData: FormData) {
     notes: String(formData.get("notes") || "") || null,
   };
 
+  let customerId = id;
+
   if (id) {
     const { error } = await supabase.from("customers").update(payload).eq("id", id);
     if (error) throw new Error(error.message);
+    await audit(userId, "customer.update", "customer", id);
   } else {
     const { data, error } = await supabase
       .from("customers")
@@ -333,10 +336,243 @@ export async function upsertCustomer(formData: FormData) {
       .select("id")
       .single();
     if (error) throw new Error(error.message);
+    customerId = data.id;
     await audit(userId, "customer.create", "customer", data.id);
   }
 
   revalidatePath("/erp/customers");
+  revalidatePath(`/erp/customers/${customerId}`);
+  redirect(`/erp/customers/${customerId}`);
+}
+
+async function findOrCreateCustomerFromEnquiry(
+  enquiry: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    customer_id: string | null;
+  },
+  userId: string
+) {
+  const supabase = await createClient();
+
+  if (enquiry.customer_id) {
+    return enquiry.customer_id;
+  }
+
+  const email = enquiry.email.trim().toLowerCase();
+  if (email) {
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("id")
+      .ilike("email", email)
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) {
+      return existing.id as string;
+    }
+  }
+
+  const { data: created, error } = await supabase
+    .from("customers")
+    .insert({
+      full_name: enquiry.name.trim() || "Unknown",
+      email: enquiry.email.trim() || null,
+      phone: enquiry.phone || null,
+      customer_type: "individual",
+      notes: `Created from enquiry ${enquiry.id}`,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+  await audit(userId, "customer.create", "customer", created.id, {
+    source: "enquiry",
+    enquiry_id: enquiry.id,
+  });
+  return created.id as string;
+}
+
+export async function convertEnquiryToCustomer(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Enquiry id is required");
+
+  const { data: enquiry, error } = await supabase
+    .from("enquiries")
+    .select("id, name, email, phone, customer_id, status")
+    .eq("id", id)
+    .single();
+
+  if (error || !enquiry) throw new Error(error?.message || "Enquiry not found");
+
+  const customerId = await findOrCreateCustomerFromEnquiry(enquiry, userId);
+
+  const updates: Record<string, unknown> = {
+    customer_id: customerId,
+    updated_at: new Date().toISOString(),
+  };
+  if (enquiry.status === "new") {
+    updates.status = "in_progress";
+  }
+
+  const { error: linkError } = await supabase
+    .from("enquiries")
+    .update(updates)
+    .eq("id", id);
+
+  if (linkError) throw new Error(linkError.message);
+
+  await audit(userId, "enquiry.convert_customer", "enquiry", id, {
+    customer_id: customerId,
+  });
+  revalidatePath("/erp/enquiries");
+  revalidatePath("/erp/customers");
+  revalidatePath(`/erp/customers/${customerId}`);
+  redirect(`/erp/customers/${customerId}`);
+}
+
+export async function convertEnquiryToOrder(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Enquiry id is required");
+
+  const qtyRaw = Number(formData.get("qty") || 1);
+  const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? Math.floor(qtyRaw) : 1;
+
+  const { data: enquiry, error } = await supabase
+    .from("enquiries")
+    .select("id, name, email, phone, customer_id, status, book_id, message, admin_notes")
+    .eq("id", id)
+    .single();
+
+  if (error || !enquiry) throw new Error(error?.message || "Enquiry not found");
+
+  const customerId = await findOrCreateCustomerFromEnquiry(enquiry, userId);
+
+  const { error: linkError } = await supabase
+    .from("enquiries")
+    .update({
+      customer_id: customerId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (linkError) throw new Error(linkError.message);
+
+  const number = orderNumber();
+  const noteParts = [`From enquiry ${id}`];
+  if (enquiry.message) {
+    noteParts.push(enquiry.message);
+  }
+
+  let subtotal = 0;
+  let book:
+    | { id: string; title: string; price_btn: number; cost_price_btn: number }
+    | null = null;
+
+  if (enquiry.book_id) {
+    const { data: bookRow, error: bookError } = await supabase
+      .from("books")
+      .select("id, title, price_btn, cost_price_btn")
+      .eq("id", enquiry.book_id)
+      .single();
+    if (bookError || !bookRow) {
+      throw new Error(bookError?.message || "Linked book not found");
+    }
+    book = bookRow;
+    subtotal = Number(book.price_btn) * qty;
+  }
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      order_number: number,
+      channel: "phone",
+      status: "draft",
+      customer_id: customerId,
+      customer_name: enquiry.name,
+      customer_email: enquiry.email,
+      customer_phone: enquiry.phone,
+      fulfillment_type: "pickup",
+      subtotal_btn: subtotal,
+      total_btn: subtotal,
+      created_by: userId,
+      notes: noteParts.join("\n\n"),
+    })
+    .select("id")
+    .single();
+
+  if (orderError) throw new Error(orderError.message);
+
+  if (book) {
+    const { error: itemError } = await supabase.from("order_items").insert({
+      order_id: order.id,
+      book_id: book.id,
+      title_snapshot: book.title,
+      quantity: qty,
+      unit_price_btn: book.price_btn,
+      unit_cost_btn: book.cost_price_btn,
+      line_total_btn: subtotal,
+    });
+    if (itemError) throw new Error(itemError.message);
+  }
+
+  const convertNote = `Converted to order ${number}`;
+  const adminNotes = enquiry.admin_notes
+    ? `${enquiry.admin_notes}\n${convertNote}`
+    : convertNote;
+
+  const { error: enquiryUpdateError } = await supabase
+    .from("enquiries")
+    .update({
+      status: "closed",
+      admin_notes: adminNotes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (enquiryUpdateError) throw new Error(enquiryUpdateError.message);
+
+  await audit(userId, "enquiry.convert_order", "enquiry", id, {
+    order_id: order.id,
+    customer_id: customerId,
+  });
+  await audit(userId, "order.create", "order", order.id, {
+    source: "enquiry",
+    enquiry_id: id,
+    order_number: number,
+  });
+
+  revalidatePath("/erp/enquiries");
+  revalidatePath("/erp/customers");
+  revalidatePath(`/erp/customers/${customerId}`);
+  revalidatePath("/erp/orders");
+  revalidatePath(`/erp/orders/${order.id}`);
+  redirect(`/erp/orders/${order.id}`);
+}
+
+export async function assignEnquiry(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  const assignedTo = String(formData.get("assigned_to") || "") || null;
+  if (!id) throw new Error("Enquiry id is required");
+
+  const { error } = await supabase
+    .from("enquiries")
+    .update({
+      assigned_to: assignedTo,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  await audit(userId, "enquiry.assign", "enquiry", id, {
+    assigned_to: assignedTo,
+  });
+  revalidatePath("/erp/enquiries");
 }
 
 export async function createPurchaseOrder(formData: FormData) {
@@ -344,11 +580,24 @@ export async function createPurchaseOrder(formData: FormData) {
   const supabase = await createClient();
   const supplierId = String(formData.get("supplier_id") || "") || null;
   const notes = String(formData.get("notes") || "") || null;
-  const bookId = String(formData.get("book_id"));
-  const qty = Number(formData.get("qty_ordered") || 0);
-  const unitCost = Number(formData.get("unit_cost_btn") || 0);
 
-  if (!bookId || qty <= 0) throw new Error("Book and quantity required");
+  const bookIds = formData.getAll("book_id").map((v) => String(v));
+  const qtys = formData.getAll("qty_ordered").map((v) => Number(v || 0));
+  const unitCosts = formData.getAll("unit_cost_btn").map((v) => Number(v || 0));
+
+  const lines: { book_id: string; qty_ordered: number; unit_cost_btn: number }[] =
+    [];
+  for (let i = 0; i < bookIds.length; i++) {
+    const book_id = bookIds[i]?.trim();
+    const qty_ordered = qtys[i] ?? 0;
+    const unit_cost_btn = unitCosts[i] ?? 0;
+    if (!book_id || qty_ordered <= 0) continue;
+    lines.push({ book_id, qty_ordered, unit_cost_btn });
+  }
+
+  if (lines.length === 0) {
+    throw new Error("At least one line with a book and quantity > 0 is required");
+  }
 
   const number = poNumber();
   const { data: po, error } = await supabase
@@ -365,22 +614,40 @@ export async function createPurchaseOrder(formData: FormData) {
     .single();
   if (error) throw new Error(error.message);
 
-  const { error: itemError } = await supabase.from("purchase_order_items").insert({
-    purchase_order_id: po.id,
-    book_id: bookId,
-    qty_ordered: qty,
-    unit_cost_btn: unitCost,
-  });
+  const { error: itemError } = await supabase.from("purchase_order_items").insert(
+    lines.map((line) => ({
+      purchase_order_id: po.id,
+      book_id: line.book_id,
+      qty_ordered: line.qty_ordered,
+      unit_cost_btn: line.unit_cost_btn,
+    }))
+  );
   if (itemError) throw new Error(itemError.message);
 
-  await audit(userId, "po.create", "purchase_order", po.id, { po_number: number });
+  await audit(userId, "po.create", "purchase_order", po.id, {
+    po_number: number,
+    lines: lines.length,
+  });
   revalidatePath("/erp/purchasing");
+  redirect(`/erp/purchasing/${po.id}`);
 }
 
 export async function receivePurchaseOrder(formData: FormData) {
   const { userId } = await requireManager();
   const supabase = await createClient();
-  const poId = String(formData.get("purchase_order_id"));
+  const poId = String(formData.get("purchase_order_id") || "");
+  if (!poId) throw new Error("Purchase order is required");
+
+  const { data: po, error: poError } = await supabase
+    .from("purchase_orders")
+    .select("id, status")
+    .eq("id", poId)
+    .single();
+  if (poError) throw new Error(poError.message);
+  if (!po) throw new Error("Purchase order not found");
+  if (po.status === "cancelled" || po.status === "received") {
+    throw new Error(`Cannot receive a ${po.status} purchase order`);
+  }
 
   const { data: items, error } = await supabase
     .from("purchase_order_items")
@@ -389,6 +656,32 @@ export async function receivePurchaseOrder(formData: FormData) {
   if (error) throw new Error(error.message);
   if (!items?.length) throw new Error("PO has no items");
 
+  type ReceiveLine = {
+    item: (typeof items)[number];
+    qty: number;
+  };
+  const toReceive: ReceiveLine[] = [];
+
+  for (const item of items) {
+    const remaining = item.qty_ordered - item.qty_received;
+    if (remaining <= 0) continue;
+
+    const raw = formData.get(`receive_${item.id}`);
+    if (raw === null || String(raw).trim() === "") continue;
+    const qty = Number(raw);
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    if (qty > remaining) {
+      throw new Error(
+        `Receive quantity for a line cannot exceed remaining (${remaining})`
+      );
+    }
+    toReceive.push({ item, qty });
+  }
+
+  if (toReceive.length === 0) {
+    throw new Error("Nothing to receive — enter a quantity greater than 0");
+  }
+
   const { data: receipt, error: grError } = await supabase
     .from("goods_receipts")
     .insert({ purchase_order_id: poId, received_by: userId })
@@ -396,62 +689,98 @@ export async function receivePurchaseOrder(formData: FormData) {
     .single();
   if (grError) throw new Error(grError.message);
 
-  for (const item of items) {
-    const remaining = item.qty_ordered - item.qty_received;
-    if (remaining <= 0) continue;
-
-    await supabase.from("goods_receipt_items").insert({
+  for (const { item, qty } of toReceive) {
+    const { error: griError } = await supabase.from("goods_receipt_items").insert({
       goods_receipt_id: receipt.id,
       book_id: item.book_id,
-      qty: remaining,
+      qty,
       unit_cost_btn: item.unit_cost_btn,
     });
+    if (griError) throw new Error(griError.message);
 
-    await supabase
+    const { error: updError } = await supabase
       .from("purchase_order_items")
-      .update({ qty_received: item.qty_ordered })
+      .update({ qty_received: item.qty_received + qty })
       .eq("id", item.id);
+    if (updError) throw new Error(updError.message);
 
-    await supabase.from("stock_movements").insert({
+    const { error: mvError } = await supabase.from("stock_movements").insert({
       book_id: item.book_id,
       movement_type: "purchase_in",
-      qty_delta: remaining,
-      reason: `Goods receipt for PO`,
+      qty_delta: qty,
+      reason: "Goods receipt for PO",
       reference_type: "goods_receipt",
       reference_id: receipt.id,
       created_by: userId,
     });
+    if (mvError) throw new Error(mvError.message);
 
-    await supabase
+    const { error: bookError } = await supabase
       .from("books")
       .update({ cost_price_btn: item.unit_cost_btn })
       .eq("id", item.book_id);
+    if (bookError) throw new Error(bookError.message);
   }
 
-  await supabase
-    .from("purchase_orders")
-    .update({ status: "received", updated_at: new Date().toISOString() })
-    .eq("id", poId);
+  const { data: refreshed, error: refError } = await supabase
+    .from("purchase_order_items")
+    .select("qty_ordered, qty_received")
+    .eq("purchase_order_id", poId);
+  if (refError) throw new Error(refError.message);
 
-  await audit(userId, "po.receive", "purchase_order", poId);
+  const allReceived =
+    (refreshed ?? []).length > 0 &&
+    (refreshed ?? []).every((i) => i.qty_received >= i.qty_ordered);
+  const anyReceived = (refreshed ?? []).some((i) => i.qty_received > 0);
+  const nextStatus = allReceived ? "received" : anyReceived ? "partial" : po.status;
+
+  const { error: statusError } = await supabase
+    .from("purchase_orders")
+    .update({ status: nextStatus, updated_at: new Date().toISOString() })
+    .eq("id", poId);
+  if (statusError) throw new Error(statusError.message);
+
+  await audit(userId, "po.receive", "purchase_order", poId, {
+    lines: toReceive.length,
+    status: nextStatus,
+  });
   revalidatePath("/erp/purchasing");
+  revalidatePath(`/erp/purchasing/${poId}`);
   revalidatePath("/erp/inventory");
+  redirect(`/erp/purchasing/${poId}`);
 }
 
-export async function createSupplier(formData: FormData) {
+export async function upsertSupplier(formData: FormData) {
   await requireManager();
   const supabase = await createClient();
+  const id = String(formData.get("id") || "");
   const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("Supplier name required");
 
-  const { error } = await supabase.from("suppliers").insert({
+  const payload = {
     name,
     contact_name: String(formData.get("contact_name") || "") || null,
     email: String(formData.get("email") || "") || null,
     phone: String(formData.get("phone") || "") || null,
-  });
-  if (error) throw new Error(error.message);
+    is_active: formData.get("is_active") === "on",
+  };
+
+  if (id) {
+    const { error } = await supabase.from("suppliers").update(payload).eq("id", id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase.from("suppliers").insert({
+      ...payload,
+      is_active: formData.has("is_active") ? payload.is_active : true,
+    });
+    if (error) throw new Error(error.message);
+  }
+
   revalidatePath("/erp/purchasing");
+}
+
+export async function createSupplier(formData: FormData) {
+  await upsertSupplier(formData);
 }
 
 export async function createExpense(formData: FormData) {
