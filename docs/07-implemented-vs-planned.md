@@ -32,6 +32,9 @@ Updated for **Production Upgrade** ([08](./08-production-upgrade-plan.md)).
 | Publishing + print/royalty UI | Prod | Partial | Pipeline done; print/royalty UI planned |
 | Staff invite + audit viewer | Prod | Done | Invite + `/erp/audit` for managers/owners |
 | Reports CSV / margin | Prod | Done | 30-day metrics, margin column, CSV export |
+| ERP mobile shell (drawer + bottom nav) | Prod | Done | Spec [13](./13-erp-mobile-shell.md); bottom tabs + drawer; grouped desktop sidebar |
+| Luxury storefront homepage + book detail | Prod | Done | Full-bleed AI hero; popular + DSB catalogue seeded |
+| Live popular catalogue seed + AI covers | Prod | Done | `scripts/seed-live-catalogue.mjs` → Supabase Storage |
 | **Infra** | | | |
 | Supabase schema + RLS | Soft | Done | |
 | No mock data | Soft | Done | |

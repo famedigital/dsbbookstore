@@ -11,6 +11,10 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 
 ## Module checklist (production)
 
+### 0. Shell / navigation
+- [x] Mobile: no persistent sidebar — top bar + bottom tabs + drawer ([13](./13-erp-mobile-shell.md))  
+- [x] Desktop: grouped sapphire sidebar (Sell / Catalogue / Ops / Insights / Admin)  
+
 ### 1. Command center `/erp`
 - [x] Today sales / orders / enquiries / low stock  
 - [ ] Cash session open indicator  

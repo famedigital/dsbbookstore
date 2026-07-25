@@ -29,9 +29,9 @@
 
 ### W1 — Design system + mobile shell
 - Premium Blue / Gold / Green tokens (refined)  
-- Storefront mobile layout + bottom nav  
-- ERP mobile-friendly shell  
-- Typography + motion baseline  
+- Storefront mobile layout + bottom nav ✅  
+- ERP mobile-friendly shell → see [13-erp-mobile-shell.md](./13-erp-mobile-shell.md)  
+- Typography + motion baseline ✅
 
 ### W2 — Media pipeline (Supabase-first)
 - Supabase Storage bucket `media`  

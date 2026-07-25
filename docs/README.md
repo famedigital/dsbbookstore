@@ -12,8 +12,9 @@
 | [08 — Production upgrade plan](./08-production-upgrade-plan.md) | **Master production roadmap** |
 | [09 — Design system](./09-design-system.md) | Colors, type, mobile UX |
 | [10 — Media pipeline](./10-media-pipeline.md) | AI → Supabase → Cloudinary migrate |
-| [11 — PWA & mobile](./11-pwa-mobile.md) | Install prompt + templates |
+| [11 — PWA & mobile](./11-pwa-mobile.md) | Install prompt + storefront mobile |
 | [12 — ERP production mode](./12-erp-production-mode.md) | Full ERP feature checklist |
+| [13 — ERP mobile shell](./13-erp-mobile-shell.md) | **ERP responsive nav: drawer + bottom bar** |
 
 **Stack:** Next.js · shadcn/ui · Supabase (data + storage first) · Cloudinary (optional CDN migrate) · Vercel · PWA  
 **Colors:** Premium Blue · Gold · Green · **No mock data**

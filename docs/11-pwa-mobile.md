@@ -50,8 +50,12 @@ Home · Catalogue · Authors · Enquire · More
 - Enquire button  
 
 ### ERP mobile
-- Drawer nav  
-- POS: full-screen cart sheet  
+See **[13 — ERP mobile shell](./13-erp-mobile-shell.md)**.
+
+- No full-width persistent sidebar on phones  
+- Bottom tabs: Home · POS · Orders · Books · More  
+- Drawer (Sheet) for complete module list  
+- POS: full-screen cart sheet (follow-up)  
 
 ## Testing checklist
 - [ ] Lighthouse PWA ≥ installable  

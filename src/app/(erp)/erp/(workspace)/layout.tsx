@@ -1,5 +1,5 @@
 import { requireStaff } from "@/lib/erp/auth";
-import { ErpSidebar } from "@/components/erp/sidebar";
+import { ErpShell } from "@/components/erp/erp-shell";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -44,20 +44,5 @@ export default async function ErpLayout({
 
   const { profile } = await requireStaff();
 
-  return (
-    <div className="flex min-h-screen bg-background">
-      <ErpSidebar profile={profile} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-border/80 bg-card/80 px-6 py-4 backdrop-blur">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
-            Thimphu · Chang Lam
-          </p>
-          <h2 className="font-heading text-lg font-medium">
-            Staff & Owner Workspace
-          </h2>
-        </header>
-        <main className="flex-1 overflow-auto p-6">{children}</main>
-      </div>
-    </div>
-  );
+  return <ErpShell profile={profile}>{children}</ErpShell>;
 }
