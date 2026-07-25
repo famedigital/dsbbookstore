@@ -27,7 +27,7 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 ### 3. Orders `/erp/orders`
 - [x] List + detail + status + mark payment  
 - [ ] Filter by channel/status/date  
-- [ ] Convert enquiry → order  
+- [x] Convert enquiry → order  
 - [ ] Refund / void with reason + stock return movement  
 
 ### 4. Catalogue `/erp/catalogue`
@@ -52,12 +52,12 @@ Complete staff/owner feature set required for daily Thimphu store operations.
 - [x] Single-line PO + receive all  
 - [x] Multi-line PO editor  
 - [x] Partial receive quantities  
-- [ ] Supplier edit/deactivate  
+- [x] Supplier edit/deactivate  
 
 ### 8. Customers `/erp/customers`
 - [x] Create + list  
 - [x] Edit + purchase history  
-- [ ] Link from enquiry  
+- [x] Link from enquiry  
 
 ### 9. Enquiries `/erp/enquiries`
 - [x] Inbox + status  
