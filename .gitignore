@@ -45,3 +45,6 @@ next-env.d.ts
 # supabase
 supabase/.temp/
 
+
+# Local AI cover sources for seeding (uploaded to Supabase; not required in git)
+scripts/assets/covers/

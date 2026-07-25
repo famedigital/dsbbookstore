@@ -1,10 +1,21 @@
 /**
- * Seed live DSB catalogue + generated cover images into Supabase Storage.
+ * Seed live DSB catalogue + AI/generated cover images into Supabase Storage.
  * Usage: node --env-file=.env.local scripts/seed-live-catalogue.mjs
+ *
+ * Cover priority per book:
+ * 1. scripts/assets/covers/<slug>.{jpg,png,webp}
+ * 2. Open Library ISBN cover (popular titles)
+ * 3. Generated gradient cover via sharp
  */
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
+import { existsSync, readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const COVERS_DIR = join(__dirname, "assets", "covers");
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -49,6 +60,66 @@ const AUTHORS = [
     slug: "singye-namgyel",
     bio: "Bhutanese author published under DSB Publication.",
   },
+  {
+    name: "James Clear",
+    slug: "james-clear",
+    bio: "Author of Atomic Habits — writing on habit formation and continuous improvement.",
+  },
+  {
+    name: "Yuval Noah Harari",
+    slug: "yuval-noah-harari",
+    bio: "Historian and author of Sapiens and related works on humankind.",
+  },
+  {
+    name: "J.K. Rowling",
+    slug: "jk-rowling",
+    bio: "Author of the Harry Potter series.",
+  },
+  {
+    name: "George Orwell",
+    slug: "george-orwell",
+    bio: "English novelist and essayist, author of Nineteen Eighty-Four and Animal Farm.",
+  },
+  {
+    name: "Anne Frank",
+    slug: "anne-frank",
+    bio: "Author of The Diary of a Young Girl.",
+  },
+  {
+    name: "Morgan Housel",
+    slug: "morgan-housel",
+    bio: "Writer on finance and human behaviour; author of The Psychology of Money.",
+  },
+  {
+    name: "Emily Brontë",
+    slug: "emily-bronte",
+    bio: "English novelist and poet; author of Wuthering Heights.",
+  },
+  {
+    name: "Antoine de Saint-Exupéry",
+    slug: "antoine-de-saint-exupery",
+    bio: "French writer and aviator; author of The Little Prince.",
+  },
+  {
+    name: "Arundhati Roy",
+    slug: "arundhati-roy",
+    bio: "Indian author of The God of Small Things and essays on politics and justice.",
+  },
+  {
+    name: "Paulo Coelho",
+    slug: "paulo-coelho",
+    bio: "Brazilian novelist; author of The Alchemist.",
+  },
+  {
+    name: "Michelle Obama",
+    slug: "michelle-obama",
+    bio: "Author of Becoming and advocate for education and public service.",
+  },
+  {
+    name: "Dale Carnegie",
+    slug: "dale-carnegie",
+    bio: "Author of How to Win Friends and Influence People.",
+  },
 ];
 
 const CATEGORIES = [
@@ -59,6 +130,11 @@ const CATEGORIES = [
   { name: "Children", slug: "children", sort_order: 5 },
   { name: "Nature & Environment", slug: "nature-environment", sort_order: 6 },
   { name: "Travel", slug: "travel", sort_order: 7 },
+  { name: "Bestsellers", slug: "bestsellers", sort_order: 8 },
+  { name: "Self-Help", slug: "self-help", sort_order: 9 },
+  { name: "Classics", slug: "classics", sort_order: 10 },
+  { name: "Young Adult", slug: "young-adult", sort_order: 11 },
+  { name: "Memoir", slug: "memoir", sort_order: 12 },
 ];
 
 const COLLECTIONS = [
@@ -83,10 +159,18 @@ const COLLECTIONS = [
     is_featured: false,
     sort_order: 3,
   },
+  {
+    title: "International Favourites",
+    slug: "international-favourites",
+    description: "Popular titles from around the world, stocked in Thimphu.",
+    is_featured: true,
+    sort_order: 4,
+  },
 ];
 
 /** @type {Array<Record<string, unknown>>} */
 const BOOKS = [
+  // —— DSB Publication ——
   {
     title: "Monpa Medicinal Plants",
     subtitle: "Indigenous Knowledge From A Himalayan Healer",
@@ -113,7 +197,6 @@ const BOOKS = [
     slug: "bhutanese-folktales-for-children",
     description:
       "A curated collection of Bhutanese children's stories drawing on oral tradition, tricksters, and mountain spirits — for young readers and families.",
-    isbn_13: null,
     language: "English",
     format: "paperback",
     page_count: 96,
@@ -279,6 +362,248 @@ const BOOKS = [
     collections: ["himalayan-knowledge"],
     color: ["#8b6914", "#1a1a2e"],
   },
+
+  // —— International favourites ——
+  {
+    title: "Atomic Habits",
+    subtitle: "An Easy & Proven Way to Build Good Habits & Break Bad Ones",
+    slug: "atomic-habits",
+    description:
+      "Tiny changes, remarkable results. James Clear's practical guide to habit formation — one of the most requested self-improvement titles on our Chang Lam shelves.",
+    isbn_13: "9780735211292",
+    language: "English",
+    format: "paperback",
+    page_count: 320,
+    publisher_name: "Avery",
+    price_btn: 1450,
+    cost_price_btn: 850,
+    stock_qty: 10,
+    is_featured: true,
+    authors: ["james-clear"],
+    categories: ["bestsellers", "self-help"],
+    collections: ["international-favourites"],
+    color: ["#0b3d91", "#e6c76a"],
+  },
+  {
+    title: "Sapiens",
+    subtitle: "A Brief History of Humankind",
+    slug: "sapiens",
+    description:
+      "Yuval Noah Harari's sweeping history of our species — from foraging bands to global empires — a staple of curious readers worldwide.",
+    isbn_13: "9780062316097",
+    language: "English",
+    format: "paperback",
+    page_count: 464,
+    publisher_name: "Harper",
+    price_btn: 1550,
+    cost_price_btn: 900,
+    stock_qty: 8,
+    is_featured: true,
+    authors: ["yuval-noah-harari"],
+    categories: ["bestsellers", "history"],
+    collections: ["international-favourites"],
+    color: ["#8b5a2b", "#0b3d91"],
+  },
+  {
+    title: "Harry Potter and the Philosopher's Stone",
+    subtitle: "Book 1",
+    slug: "harry-potter-philosophers-stone",
+    description:
+      "The first adventure at Hogwarts — still one of the most borrowed and gifted titles for young readers visiting DSB Books.",
+    isbn_13: "9780747532699",
+    language: "English",
+    format: "paperback",
+    page_count: 223,
+    publisher_name: "Bloomsbury",
+    price_btn: 950,
+    cost_price_btn: 520,
+    stock_qty: 15,
+    is_featured: true,
+    authors: ["jk-rowling"],
+    categories: ["young-adult", "bestsellers", "children"],
+    collections: ["international-favourites", "young-readers"],
+    color: ["#1a2744", "#c9a227"],
+  },
+  {
+    title: "Nineteen Eighty-Four",
+    subtitle: null,
+    slug: "nineteen-eighty-four",
+    description:
+      "Orwell's chilling vision of surveillance and language — an essential modern classic that belongs on every serious reader's shelf.",
+    isbn_13: "9780451524935",
+    language: "English",
+    format: "paperback",
+    page_count: 328,
+    publisher_name: "Signet Classics",
+    price_btn: 750,
+    cost_price_btn: 380,
+    stock_qty: 12,
+    is_featured: true,
+    authors: ["george-orwell"],
+    categories: ["classics", "bestsellers"],
+    collections: ["international-favourites"],
+    color: ["#2a2a2a", "#8b1e1e"],
+  },
+  {
+    title: "The Diary of a Young Girl",
+    subtitle: null,
+    slug: "diary-of-a-young-girl",
+    description:
+      "Anne Frank's diary remains one of the most powerful memoirs of the twentieth century — intimate, hopeful, and unforgettable.",
+    isbn_13: "9780553296981",
+    language: "English",
+    format: "paperback",
+    page_count: 283,
+    publisher_name: "Bantam",
+    price_btn: 680,
+    cost_price_btn: 340,
+    stock_qty: 9,
+    is_featured: false,
+    authors: ["anne-frank"],
+    categories: ["memoir", "classics", "history"],
+    collections: ["international-favourites"],
+    color: ["#6b5b4b", "#2f3e56"],
+  },
+  {
+    title: "The Psychology of Money",
+    subtitle: "Timeless Lessons on Wealth, Greed, and Happiness",
+    slug: "the-psychology-of-money",
+    description:
+      "Morgan Housel on how people think about money — short stories that reveal why behaviour matters more than spreadsheets.",
+    isbn_13: "9780857197689",
+    language: "English",
+    format: "paperback",
+    page_count: 256,
+    publisher_name: "Harriman House",
+    price_btn: 1250,
+    cost_price_btn: 700,
+    stock_qty: 11,
+    is_featured: true,
+    authors: ["morgan-housel"],
+    categories: ["bestsellers", "self-help"],
+    collections: ["international-favourites"],
+    color: ["#0b3d91", "#c9a227"],
+  },
+  {
+    title: "Wuthering Heights",
+    subtitle: null,
+    slug: "wuthering-heights",
+    description:
+      "Emily Brontë's stormy masterpiece of passion and revenge on the Yorkshire moors — a cornerstone of English literature.",
+    isbn_13: "9780141439556",
+    language: "English",
+    format: "paperback",
+    page_count: 416,
+    publisher_name: "Penguin Classics",
+    price_btn: 620,
+    cost_price_btn: 300,
+    stock_qty: 7,
+    is_featured: false,
+    authors: ["emily-bronte"],
+    categories: ["classics"],
+    collections: ["international-favourites"],
+    color: ["#3d4f3f", "#6b7c8a"],
+  },
+  {
+    title: "The Little Prince",
+    subtitle: null,
+    slug: "the-little-prince",
+    description:
+      "Saint-Exupéry's beloved fable about love, loss, and seeing with the heart — treasured by children and adults alike.",
+    isbn_13: "9780156012191",
+    language: "English",
+    format: "paperback",
+    page_count: 96,
+    publisher_name: "Harvest",
+    price_btn: 580,
+    cost_price_btn: 280,
+    stock_qty: 14,
+    is_featured: true,
+    authors: ["antoine-de-saint-exupery"],
+    categories: ["children", "classics"],
+    collections: ["international-favourites", "young-readers"],
+    color: ["#c47b2b", "#1e3a5f"],
+  },
+  {
+    title: "The God of Small Things",
+    subtitle: null,
+    slug: "the-god-of-small-things",
+    description:
+      "Arundhati Roy's Booker Prize-winning novel of childhood, caste, and forbidden love in Kerala — luminous and devastating.",
+    isbn_13: "9780812979657",
+    language: "English",
+    format: "paperback",
+    page_count: 333,
+    publisher_name: "Random House",
+    price_btn: 980,
+    cost_price_btn: 520,
+    stock_qty: 6,
+    is_featured: true,
+    authors: ["arundhati-roy"],
+    categories: ["bestsellers", "classics"],
+    collections: ["international-favourites"],
+    color: ["#0f6b4c", "#c9a227"],
+  },
+  {
+    title: "The Alchemist",
+    subtitle: null,
+    slug: "the-alchemist",
+    description:
+      "Paulo Coelho's international phenomenon about following your Personal Legend — a perennial favourite for gift-givers and seekers.",
+    isbn_13: "9780062315007",
+    language: "English",
+    format: "paperback",
+    page_count: 208,
+    publisher_name: "HarperOne",
+    price_btn: 890,
+    cost_price_btn: 450,
+    stock_qty: 13,
+    is_featured: true,
+    authors: ["paulo-coelho"],
+    categories: ["bestsellers", "fiction"],
+    collections: ["international-favourites"],
+    color: ["#c9a227", "#0b3d91"],
+  },
+  {
+    title: "Becoming",
+    subtitle: null,
+    slug: "becoming",
+    description:
+      "Michelle Obama's intimate memoir of identity, public life, and finding your voice — inspiring readers across generations.",
+    isbn_13: "9781524763138",
+    language: "English",
+    format: "paperback",
+    page_count: 448,
+    publisher_name: "Crown",
+    price_btn: 1650,
+    cost_price_btn: 950,
+    stock_qty: 5,
+    is_featured: false,
+    authors: ["michelle-obama"],
+    categories: ["memoir", "bestsellers"],
+    collections: ["international-favourites"],
+    color: ["#1a1a2e", "#e6c76a"],
+  },
+  {
+    title: "How to Win Friends and Influence People",
+    subtitle: null,
+    slug: "how-to-win-friends",
+    description:
+      "Dale Carnegie's enduring classic on human relations — practical, readable, and still among our most requested business titles.",
+    isbn_13: "9780671027032",
+    language: "English",
+    format: "paperback",
+    page_count: 288,
+    publisher_name: "Pocket Books",
+    price_btn: 780,
+    cost_price_btn: 400,
+    stock_qty: 10,
+    is_featured: false,
+    authors: ["dale-carnegie"],
+    categories: ["self-help", "bestsellers"],
+    collections: ["international-favourites"],
+    color: ["#0b3d91", "#4a6741"],
+  },
 ];
 
 function escapeXml(s) {
@@ -326,12 +651,64 @@ async function makeCoverPng(title, colors) {
   </defs>
   <rect width="800" height="1200" fill="url(#g)"/>
   <rect x="48" y="48" width="704" height="1104" fill="none" stroke="#e6c76a" stroke-opacity="0.55" stroke-width="2"/>
-  <text x="50%" y="18%" text-anchor="middle" fill="#e6c76a" font-family="Georgia, serif" font-size="22" letter-spacing="8">DSB PUBLICATION</text>
+  <text x="50%" y="18%" text-anchor="middle" fill="#e6c76a" font-family="Georgia, serif" font-size="22" letter-spacing="8">DSB BOOKS</text>
   ${textSvg}
   <text x="50%" y="88%" text-anchor="middle" fill="#f7f4ec" fill-opacity="0.85" font-family="Georgia, serif" font-size="24">Thimphu · Bhutan</text>
 </svg>`;
 
   return sharp(Buffer.from(svg)).png().toBuffer();
+}
+
+async function loadLocalCover(slug) {
+  for (const ext of ["jpg", "jpeg", "png", "webp"]) {
+    const path = join(COVERS_DIR, `${slug}.${ext}`);
+    if (existsSync(path)) {
+      const raw = readFileSync(path);
+      const png = await sharp(raw)
+        .rotate()
+        .resize(800, 1200, { fit: "cover", position: "centre" })
+        .png()
+        .toBuffer();
+      return { buffer: png, source: `local:${slug}.${ext}` };
+    }
+  }
+  return null;
+}
+
+async function loadOpenLibraryCover(isbn) {
+  if (!isbn) return null;
+  const endpoints = [
+    `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+    `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`,
+  ];
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, { redirect: "follow" });
+      if (!res.ok) continue;
+      const ctype = res.headers.get("content-type") || "";
+      if (!ctype.includes("image")) continue;
+      const arr = Buffer.from(await res.arrayBuffer());
+      if (arr.length < 2000) continue;
+      const png = await sharp(arr)
+        .rotate()
+        .resize(800, 1200, { fit: "cover", position: "centre" })
+        .png()
+        .toBuffer();
+      return { buffer: png, source: `openlibrary:${isbn}` };
+    } catch {
+      // try next
+    }
+  }
+  return null;
+}
+
+async function resolveCover(book) {
+  const local = await loadLocalCover(book.slug);
+  if (local) return local;
+  const remote = await loadOpenLibraryCover(book.isbn_13);
+  if (remote) return remote;
+  const generated = await makeCoverPng(book.title, book.color);
+  return { buffer: generated, source: "generated" };
 }
 
 async function upsertBySlug(table, row, slugField = "slug") {
@@ -367,6 +744,15 @@ async function main() {
   });
   if (authErr) throw authErr;
   console.log("Signed in:", auth.user.email);
+
+  // Ensure fiction category exists for The Alchemist
+  if (!CATEGORIES.find((c) => c.slug === "fiction")) {
+    CATEGORIES.push({
+      name: "Fiction",
+      slug: "fiction",
+      sort_order: 13,
+    });
+  }
 
   const authorIds = {};
   for (const a of AUTHORS) {
@@ -419,12 +805,12 @@ async function main() {
   }
 
   for (const book of BOOKS) {
-    const png = await makeCoverPng(book.title, book.color);
+    const cover = await resolveCover(book);
     const path = `covers/${book.slug}-${randomUUID().slice(0, 8)}.png`;
 
     const { error: upErr } = await supabase.storage
       .from("media")
-      .upload(path, png, { contentType: "image/png", upsert: true });
+      .upload(path, cover.buffer, { contentType: "image/png", upsert: true });
     if (upErr) throw upErr;
 
     const { data: pub } = supabase.storage.from("media").getPublicUrl(path);
@@ -435,13 +821,13 @@ async function main() {
       .insert({
         kind: "cover",
         title: `${book.title} cover`,
-        prompt: `DSB Publication cover for ${book.title}`,
+        prompt: `Cover for ${book.title} (${cover.source})`,
         storage_provider: "supabase",
         supabase_path: path,
         supabase_url: supabaseUrl,
         width: 800,
         height: 1200,
-        bytes: png.length,
+        bytes: cover.buffer.length,
         mime_type: "image/png",
         created_by: auth.user.id,
       })
@@ -449,7 +835,7 @@ async function main() {
       .single();
     if (mediaErr) throw mediaErr;
 
-    const bookRow = {
+    const bookMeta = {
       title: book.title,
       subtitle: book.subtitle,
       slug: book.slug,
@@ -461,7 +847,6 @@ async function main() {
       publisher_name: book.publisher_name,
       price_btn: book.price_btn,
       cost_price_btn: book.cost_price_btn,
-      stock_qty: book.stock_qty,
       is_featured: book.is_featured,
       is_published: true,
       cover_media_id: media.id,
@@ -475,73 +860,32 @@ async function main() {
 
     const { data: existingBook } = await supabase
       .from("books")
-      .select("id")
+      .select("id, stock_qty")
       .eq("slug", book.slug)
       .maybeSingle();
 
     let bookId;
     if (existingBook?.id) {
-      // Preserve stock ledger: update metadata but set stock via movement if needed
-      const { data, error } = await supabase
+      const { error: e2 } = await supabase
         .from("books")
-        .update({
-          ...bookRow,
-          stock_qty: undefined, // don't fight trigger; set below carefully
-        })
-        .eq("id", existingBook.id)
-        .select("id, stock_qty")
-        .single();
-      if (error) {
-        // retry without stripping stock
-        const { data: d2, error: e2 } = await supabase
-          .from("books")
-          .update({
-            title: bookRow.title,
-            subtitle: bookRow.subtitle,
-            description: bookRow.description,
-            isbn_13: bookRow.isbn_13,
-            language: bookRow.language,
-            format: bookRow.format,
-            page_count: bookRow.page_count,
-            publisher_name: bookRow.publisher_name,
-            price_btn: bookRow.price_btn,
-            cost_price_btn: bookRow.cost_price_btn,
-            is_featured: bookRow.is_featured,
-            is_published: true,
-            cover_media_id: media.id,
-          })
-          .eq("id", existingBook.id)
-          .select("id, stock_qty")
-          .single();
-        if (e2) throw e2;
-        bookId = d2.id;
-        const delta = book.stock_qty - d2.stock_qty;
-        if (delta !== 0) {
-          await supabase.from("stock_movements").insert({
-            book_id: bookId,
-            movement_type: "adjustment",
-            qty_delta: delta,
-            reason: "Seed catalogue restock",
-            created_by: auth.user.id,
-          });
-        }
-      } else {
-        bookId = data.id;
-        const delta = book.stock_qty - data.stock_qty;
-        if (delta !== 0) {
-          await supabase.from("stock_movements").insert({
-            book_id: bookId,
-            movement_type: "adjustment",
-            qty_delta: delta,
-            reason: "Seed catalogue restock",
-            created_by: auth.user.id,
-          });
-        }
+        .update(bookMeta)
+        .eq("id", existingBook.id);
+      if (e2) throw e2;
+      bookId = existingBook.id;
+      const delta = book.stock_qty - existingBook.stock_qty;
+      if (delta !== 0) {
+        await supabase.from("stock_movements").insert({
+          book_id: bookId,
+          movement_type: "adjustment",
+          qty_delta: delta,
+          reason: "Seed catalogue restock",
+          created_by: auth.user.id,
+        });
       }
     } else {
       const { data, error } = await supabase
         .from("books")
-        .insert({ ...bookRow, stock_qty: 0 })
+        .insert({ ...bookMeta, stock_qty: 0 })
         .select("id")
         .single();
       if (error) throw error;
@@ -562,28 +906,40 @@ async function main() {
     await supabase.from("book_categories").delete().eq("book_id", bookId);
     await supabase.from("collection_books").delete().eq("book_id", bookId);
 
-    await supabase.from("book_authors").insert(
-      book.authors.map((slug, i) => ({
-        book_id: bookId,
-        author_id: authorIds[slug],
-        sort_order: i,
-      }))
-    );
-    await supabase.from("book_categories").insert(
-      book.categories.map((slug) => ({
-        book_id: bookId,
-        category_id: categoryIds[slug],
-      }))
-    );
-    await supabase.from("collection_books").insert(
-      book.collections.map((slug, i) => ({
-        book_id: bookId,
-        collection_id: collectionIds[slug],
-        sort_order: i,
-      }))
-    );
+    const authorRows = book.authors
+      .map((slug, i) =>
+        authorIds[slug]
+          ? { book_id: bookId, author_id: authorIds[slug], sort_order: i }
+          : null
+      )
+      .filter(Boolean);
+    if (authorRows.length) await supabase.from("book_authors").insert(authorRows);
 
-    console.log("book", book.slug, "→", supabaseUrl);
+    const categoryRows = book.categories
+      .map((slug) =>
+        categoryIds[slug]
+          ? { book_id: bookId, category_id: categoryIds[slug] }
+          : null
+      )
+      .filter(Boolean);
+    if (categoryRows.length)
+      await supabase.from("book_categories").insert(categoryRows);
+
+    const collectionRows = book.collections
+      .map((slug, i) =>
+        collectionIds[slug]
+          ? {
+              book_id: bookId,
+              collection_id: collectionIds[slug],
+              sort_order: i,
+            }
+          : null
+      )
+      .filter(Boolean);
+    if (collectionRows.length)
+      await supabase.from("collection_books").insert(collectionRows);
+
+    console.log("book", book.slug, cover.source, "→", supabaseUrl);
   }
 
   const { count } = await supabase

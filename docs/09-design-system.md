@@ -37,10 +37,13 @@ All colors live in `src/app/globals.css` via shadcn variables only.
 - Safe-area padding for notched phones  
 
 ## ERP mobile template
-- Collapsible sidebar → drawer on `<md`  
-- Bottom quick actions on POS: Search · Cart · Charge  
-- Tables → stacked cards on small screens  
-- Dense but calm; sapphire sidebar preserved on desktop  
+See **[13 — ERP mobile shell](./13-erp-mobile-shell.md)** for the full spec.
+
+- **`< md`:** no persistent sidebar — top bar + **bottom tabs** (Home · POS · Orders · Books · More) + left **Sheet drawer** for full menu  
+- **`≥ md`:** grouped sapphire sidebar (Sell / Catalogue / Ops / Insights / Admin)  
+- Touch targets ≥ 44px; `pb-safe` on bottom bar  
+- Tables → stacked cards on small screens (page-level follow-up)  
+- Dense but calm; sapphire chrome on desktop sidebar only  
 
 ## Density & feedback
 - Loading: skeletons (shadcn)  
