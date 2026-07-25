@@ -51,6 +51,7 @@ export function PosClient({
   const [customerName, setCustomerName] = useState("");
   const [loading, setLoading] = useState(false);
   const [successOrder, setSuccessOrder] = useState<string | null>(null);
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -110,6 +111,7 @@ export function PosClient({
     setLoading(true);
     setError(null);
     setSuccessOrder(null);
+    setSuccessOrderId(null);
     try {
       const result = await createPosSale({
         items: cart.map((l) => ({
@@ -123,6 +125,7 @@ export function PosClient({
         customerName: customerName.trim() || undefined,
       });
       setSuccessOrder(result.orderNumber);
+      setSuccessOrderId(result.orderId);
       setCart([]);
       setCustomerName("");
     } catch (err) {
@@ -178,11 +181,18 @@ export function PosClient({
         </CardHeader>
         <CardContent className="space-y-4">
           {successOrder ? (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
               <p className="font-medium text-primary">Sale complete</p>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-muted-foreground text-sm">
                 Order <span className="font-mono">{successOrder}</span>
               </p>
+              {successOrderId ? (
+                <Button asChild size="sm" variant="outline">
+                  <a href={`/erp/orders/${successOrderId}/receipt`}>
+                    View / print receipt
+                  </a>
+                </Button>
+              ) : null}
             </div>
           ) : null}
 

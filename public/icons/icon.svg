@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DSB Books">
+  <rect width="512" height="512" rx="96" fill="#0b3d91"/>
+  <rect x="96" y="120" width="320" height="272" rx="24" fill="#f7f4ec"/>
+  <rect x="128" y="160" width="180" height="16" rx="8" fill="#0b3d91"/>
+  <rect x="128" y="200" width="240" height="12" rx="6" fill="#c9a227"/>
+  <rect x="128" y="232" width="200" height="12" rx="6" fill="#0f6b4c"/>
+  <rect x="128" y="264" width="220" height="12" rx="6" fill="#0b3d91" opacity="0.55"/>
+  <text x="256" y="400" text-anchor="middle" font-family="Georgia, serif" font-size="56" font-weight="700" fill="#f7f4ec">DSB</text>
+</svg>

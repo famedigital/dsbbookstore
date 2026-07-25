@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { requireStaff, canSeeCost } from "@/lib/erp/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatBtn } from "@/lib/erp/format";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -69,7 +71,7 @@ export default async function ReportsPage() {
   const items = orderItemsRes.data ?? [];
   const topBooksMap = new Map<
     string,
-    { title: string; qty: number }
+    { title: string; qty: number; revenue: number; cost: number }
   >();
   let revenueFromItems = 0;
   let costFromItems = 0;
@@ -78,19 +80,27 @@ export default async function ReportsPage() {
     const bookId = item.book_id as string;
     const title = item.title_snapshot as string;
     const qty = Number(item.quantity);
-    revenueFromItems += Number(item.line_total_btn);
-    costFromItems += qty * Number(item.unit_cost_btn);
+    const revenue = Number(item.line_total_btn);
+    const cost = qty * Number(item.unit_cost_btn);
+    revenueFromItems += revenue;
+    costFromItems += cost;
 
     const existing = topBooksMap.get(bookId);
     if (existing) {
       existing.qty += qty;
+      existing.revenue += revenue;
+      existing.cost += cost;
     } else {
-      topBooksMap.set(bookId, { title, qty });
+      topBooksMap.set(bookId, { title, qty, revenue, cost });
     }
   }
 
   const topBooks = [...topBooksMap.entries()]
-    .map(([bookId, data]) => ({ bookId, ...data }))
+    .map(([bookId, data]) => ({
+      bookId,
+      ...data,
+      margin: data.revenue - data.cost,
+    }))
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 10);
 
@@ -102,16 +112,36 @@ export default async function ReportsPage() {
       : 0;
 
   const roughMargin = revenueFromItems - costFromItems;
+  const topColSpan = showCost ? 3 : 2;
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          Reports
-        </h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Sales, inventory, and enquiry metrics for the last 30 days.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            Reports
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Sales, inventory, and enquiry metrics for the last 30 days.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/erp/reports/export?type=sales">Export sales CSV</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/erp/reports/export?type=low_stock">
+              Export low stock CSV
+            </Link>
+          </Button>
+          {showCost ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/erp/reports/export?type=margin">
+                Export margin CSV
+              </Link>
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -190,12 +220,18 @@ export default async function ReportsPage() {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead className="text-right">Units sold</TableHead>
+                {showCost ? (
+                  <TableHead className="text-right">Margin</TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
               {topBooks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-muted-foreground">
+                  <TableCell
+                    colSpan={topColSpan}
+                    className="text-muted-foreground"
+                  >
                     No sales data for this period.
                   </TableCell>
                 </TableRow>
@@ -206,6 +242,11 @@ export default async function ReportsPage() {
                     <TableCell className="text-right tabular-nums">
                       {book.qty}
                     </TableCell>
+                    {showCost ? (
+                      <TableCell className="text-right tabular-nums">
+                        {formatBtn(book.margin)}
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))
               )}

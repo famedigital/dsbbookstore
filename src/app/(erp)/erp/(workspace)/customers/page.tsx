@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireStaff } from "@/lib/erp/auth";
 import { upsertCustomer } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -120,7 +121,12 @@ export default async function CustomersPage() {
                 list.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">
-                      {customer.full_name}
+                      <Link
+                        href={`/erp/customers/${customer.id}`}
+                        className="hover:underline"
+                      >
+                        {customer.full_name}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {customer.email ?? "—"}

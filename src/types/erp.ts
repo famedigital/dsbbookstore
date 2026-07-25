@@ -101,6 +101,7 @@ export type Book = {
   low_stock_threshold: number | null;
   availability_status: AvailabilityStatus;
   cover_public_id: string | null;
+  cover_media_id: string | null;
   is_featured: boolean;
   is_published: boolean;
   seo_title: string | null;
@@ -238,6 +239,15 @@ export type PurchaseOrder = {
   updated_at: string;
 };
 
+export type PurchaseOrderItem = {
+  id: string;
+  purchase_order_id: string;
+  book_id: string;
+  qty_ordered: number;
+  qty_received: number;
+  unit_cost_btn: number;
+};
+
 export type StockMovement = {
   id: string;
   book_id: string;
@@ -287,6 +297,16 @@ export type PublishingTitle = {
   target_publish_date: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type AuditLog = {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  meta: Record<string, unknown> | null;
+  created_at: string;
 };
 
 export const STAFF_ROLES: UserRole[] = ["owner", "manager", "staff"];

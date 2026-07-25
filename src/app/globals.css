@@ -134,4 +134,7 @@
   .font-heading {
     font-family: var(--font-heading), ui-serif, Georgia, serif;
   }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

@@ -10,7 +10,9 @@ Routes under `/erp`. Middleware requires authenticated user with `profiles.role`
 | `/erp/orders` | Staff | List orders, status updates | `orders`, `order_items` |
 | `/erp/orders/[id]` | Staff | Order detail | `orders`, `order_items`, `payments` |
 | `/erp/catalogue` | Staff | List books, link to edit | `books` |
+| `/erp/media` | Staff | Upload/AI generate covers, attach to books; migrate (manager+) | `media_assets`, Storage `media` |
 | `/erp/catalogue/new` | Staff | `BookForm` → `upsertBook` | `books` |
+| `/erp/orders/[id]/receipt` | Staff | Printable POS receipt | `orders`, `order_items`, `payments`, `store_settings` |
 | `/erp/catalogue/[id]` | Staff | Edit book, authors, categories, unpublish | `books`, `book_authors`, `book_categories`, `authors`, `categories` |
 | `/erp/authors` | Staff | CRUD authors | `authors` |
 | `/erp/categories` | Staff | CRUD categories | `categories` |
@@ -39,7 +41,9 @@ Routes under `/erp`. Middleware requires authenticated user with `profiles.role`
 | Purchasing, finance, publishing | — | ✓ | ✓ |
 | Staff roles, store settings | — | — | ✓ |
 
-Nav items are filtered in `src/components/erp/nav.ts` via `navForRole()`.
+Nav items are filtered in `src/components/erp/nav.ts` via `navForRole()`.  
+Mobile/desktop chrome: [13 — ERP mobile shell](./13-erp-mobile-shell.md) (`ErpShell`, bottom tabs, drawer).  
+Also: `/erp/audit` (manager+), `/erp/customers/[id]`, `/erp/purchasing/[id]`, `/erp/reports/export`.
 
 ## Public storefront (related)
 
