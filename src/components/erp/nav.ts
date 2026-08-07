@@ -72,9 +72,3 @@ export function navForRole(role: UserRole) {
     (item) => !item.roles || item.roles.includes(role)
   );
 }
-
-export function navForRole(role: UserRole) {
-  return erpNav.filter(
-    (item) => !item.roles || item.roles.includes(role)
-  );
-}
