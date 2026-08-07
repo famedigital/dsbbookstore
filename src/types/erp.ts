@@ -160,9 +160,56 @@ export type Enquiry = {
   email: string;
   phone: string | null;
   message: string;
+  topic: string | null;
   status: EnquiryStatus;
   assigned_to: string | null;
   admin_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CmsPageTemplate = "hub" | "article" | "legal" | "simple";
+
+export type CmsPage = {
+  id: string;
+  slug: string;
+  title: string;
+  nav_label: string | null;
+  subtitle: string | null;
+  body_md: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  hero_public_id: string | null;
+  template: CmsPageTemplate;
+  show_enquire_cta: boolean;
+  enquire_topic: string | null;
+  is_published: boolean;
+  is_required: boolean;
+  sort_order: number;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CmsSection = {
+  id: string;
+  key: string;
+  label: string;
+  value_text: string | null;
+  value_md: string | null;
+  is_published: boolean;
+  sort_order: number;
+  updated_at: string;
+};
+
+export type ShippingZone = {
+  id: string;
+  code: string;
+  label: string;
+  fee_btn: number;
+  is_active: boolean;
+  notes_md: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 };
@@ -275,6 +322,9 @@ export type StoreSettings = {
   receipt_footer: string | null;
   tax_enabled: boolean;
   tax_rate: number;
+  online_checkout_enabled: boolean;
+  btn_per_usd: number;
+  stripe_enabled: boolean;
   updated_at: string;
 };
 

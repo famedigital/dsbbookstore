@@ -5,6 +5,8 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import { submitPublicEnquiry } from "@/lib/erp/actions";
+import { getStoreSettingsPublic } from "@/lib/cms/get-page";
+import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -68,6 +70,13 @@ export default async function BookDetailPage({
 
   if (!data) notFound();
   const book = data as Book;
+  const settings = await getStoreSettingsPublic();
+  const canAddToCart =
+    Boolean(settings.online_checkout_enabled) &&
+    book.stock_qty > 0 &&
+    book.availability_status !== "enquire_only" &&
+    book.availability_status !== "out_of_stock" &&
+    book.availability_status !== "coming_soon";
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
@@ -99,6 +108,14 @@ export default async function BookDetailPage({
           <p className="mt-6 text-2xl font-medium text-primary">
             {formatBtn(book.price_btn)}
           </p>
+          {canAddToCart ? (
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <AddToCartButton bookId={book.id} />
+              <Button asChild variant="outline">
+                <Link href="/cart">View cart</Link>
+              </Button>
+            </div>
+          ) : null}
           <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
             <div>
               <dt className="text-muted-foreground">ISBN</dt>
@@ -138,6 +155,7 @@ export default async function BookDetailPage({
               <h2 className="font-heading text-xl">Enquire about this book</h2>
               <input type="hidden" name="book_id" value={book.id} />
               <input type="hidden" name="book_slug" value={book.slug} />
+              <input type="hidden" name="topic" value="title" />
               <div className="space-y-1">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" name="name" required />
@@ -156,6 +174,7 @@ export default async function BookDetailPage({
                   id="message"
                   name="message"
                   required
+                  minLength={10}
                   defaultValue={`I would like to enquire about "${book.title}".`}
                 />
               </div>

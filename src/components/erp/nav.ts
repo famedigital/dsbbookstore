@@ -3,6 +3,7 @@ import {
   Boxes,
   CircleDollarSign,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Library,
   PackageSearch,
@@ -45,6 +46,12 @@ export const erpNav: NavItem[] = [
     icon: PenLine,
     roles: ["owner", "manager"],
   },
+  {
+    title: "Content",
+    href: "/erp/content",
+    icon: FileText,
+    roles: ["owner", "manager"],
+  },
   { title: "Reports", href: "/erp/reports", icon: Library },
   {
     title: "Staff",
@@ -59,6 +66,12 @@ export const erpNav: NavItem[] = [
     roles: ["owner"],
   },
 ];
+
+export function navForRole(role: UserRole) {
+  return erpNav.filter(
+    (item) => !item.roles || item.roles.includes(role)
+  );
+}
 
 export function navForRole(role: UserRole) {
   return erpNav.filter(

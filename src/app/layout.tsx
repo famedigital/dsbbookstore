@@ -21,12 +21,16 @@ const libreBodoni = Libre_Bodoni({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      "http://localhost:3000"
+  ),
   title: {
     default: "DSB Books · Thimphu",
     template: "%s · DSB Books",
   },
   description:
-    "Digital catalogue and ERP for DSB Books — Bhutan's bookstore in Thimphu.",
+    "Bhutan's oldest bookstore in Thimphu — live catalogue, DSB publications, and store visits on Chang Lam.",
 };
 
 export default function RootLayout({
