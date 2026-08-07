@@ -76,6 +76,11 @@ export default async function EnquiriesPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {enquiry.topic ? (
+                      <Badge variant="outline" className="capitalize">
+                        {enquiry.topic.replace(/-/g, " ")}
+                      </Badge>
+                    ) : null}
                     <Badge
                       variant={enquiryVariant(enquiry.status)}
                       className="capitalize"

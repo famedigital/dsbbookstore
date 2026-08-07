@@ -6,6 +6,7 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff, requireManager, requireOwner } from "@/lib/erp/auth";
 import { orderNumber, poNumber, slugify } from "@/lib/erp/format";
+import { storefrontPathForSlug } from "@/lib/cms/get-page";
 import type { PaymentMethod } from "@/types/erp";
 
 async function audit(
@@ -396,11 +397,17 @@ export async function updateStoreSettings(formData: FormData) {
       address_line1: String(formData.get("address_line1") || "") || null,
       low_stock_default: Number(formData.get("low_stock_default") || 3),
       receipt_footer: String(formData.get("receipt_footer") || "") || null,
+      online_checkout_enabled: formData.get("online_checkout_enabled") === "on",
+      btn_per_usd: Number(formData.get("btn_per_usd") || 84),
+      stripe_enabled: formData.get("stripe_enabled") === "on",
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
   if (error) throw new Error(error.message);
   revalidatePath("/erp/settings");
+  revalidatePath("/");
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
 }
 
 export async function updateStaffRole(formData: FormData) {
@@ -703,29 +710,169 @@ export async function updatePublishingTitle(formData: FormData) {
 }
 
 export async function submitPublicEnquiry(formData: FormData) {
+  const honeypot = String(formData.get("company_website") || "").trim();
+  const bookSlug = String(formData.get("book_slug") || "").trim();
+  const successPath = bookSlug
+    ? `/books/${bookSlug}?sent=1`
+    : "/enquiry?sent=1";
+
+  // Silent success for bots that fill the honeypot
+  if (honeypot) {
+    redirect(successPath);
+  }
+
   const supabase = await createClient();
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const message = String(formData.get("message") || "").trim();
+  const topic = String(formData.get("topic") || "").trim() || null;
   const bookId = String(formData.get("book_id") || "") || null;
 
-  if (!name || !email || !message) {
-    throw new Error("Name, email, and message are required");
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!name || !emailOk || message.length < 10) {
+    throw new Error(
+      "Name, a valid email, and a message of at least 10 characters are required"
+    );
   }
 
-  const { error } = await supabase.from("enquiries").insert({
+  const base = {
     name,
     email,
     phone: String(formData.get("phone") || "") || null,
     message,
     book_id: bookId,
-  });
-  if (error) throw new Error(error.message);
-  revalidatePath("/erp/enquiries");
+  };
 
-  const bookSlug = String(formData.get("book_slug") || "").trim();
-  if (bookSlug) {
-    redirect(`/books/${bookSlug}?sent=1`);
+  const { error } = await supabase.from("enquiries").insert({
+    ...base,
+    topic,
+  });
+
+  if (error) {
+    // Fallback if topic column is not migrated yet
+    const { error: fallbackError } = await supabase
+      .from("enquiries")
+      .insert(base);
+    if (fallbackError) throw new Error(fallbackError.message);
   }
-  redirect("/enquiry?sent=1");
+
+  revalidatePath("/erp/enquiries");
+  redirect(successPath);
+}
+
+export async function upsertCmsPage(formData: FormData) {
+  const { userId } = await requireManager();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") || "");
+  const title = String(formData.get("title") || "").trim();
+  if (!title) throw new Error("Title is required");
+  if (!id) throw new Error("Page id is required");
+
+  const isRequired =
+    formData.get("is_required") === "on" ||
+    formData.get("is_required") === "true";
+
+  const payload = {
+    title,
+    nav_label: String(formData.get("nav_label") || "") || null,
+    subtitle: String(formData.get("subtitle") || "") || null,
+    body_md: String(formData.get("body_md") || ""),
+    seo_title: String(formData.get("seo_title") || "") || null,
+    seo_description: String(formData.get("seo_description") || "") || null,
+    template: String(formData.get("template") || "article"),
+    show_enquire_cta: formData.get("show_enquire_cta") === "on",
+    enquire_topic: String(formData.get("enquire_topic") || "") || null,
+    is_published: isRequired ? true : formData.get("is_published") === "on",
+    sort_order: Number(formData.get("sort_order") || 0),
+    updated_by: userId,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("cms_pages")
+    .update(payload)
+    .eq("id", id)
+    .select("slug")
+    .single();
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "cms_page.update", "cms_page", id, { title });
+
+  const slug = data?.slug as string | undefined;
+  revalidatePath("/erp/content");
+  revalidatePath(`/erp/content/${id}`);
+  if (slug) {
+    revalidatePath(storefrontPathForSlug(slug));
+    if (slug === "about" || slug.startsWith("about/")) {
+      revalidatePath("/about");
+    }
+    if (slug === "enquiry") revalidatePath("/enquiry");
+    if (slug === "visit") revalidatePath("/visit");
+    if (slug === "privacy") revalidatePath("/privacy");
+    if (slug === "terms") revalidatePath("/terms");
+  }
+
+  redirect(`/erp/content/${id}`);
+}
+
+export async function upsertCmsSection(formData: FormData) {
+  const { userId } = await requireManager();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") || "");
+  const key = String(formData.get("key") || "");
+  const valueText = String(formData.get("value_text") || "");
+
+  if (!id && !key) throw new Error("Section id or key is required");
+
+  const payload = {
+    value_text: valueText,
+    updated_at: new Date().toISOString(),
+  };
+
+  let query = supabase.from("cms_sections").update(payload);
+  if (id) query = query.eq("id", id);
+  else query = query.eq("key", key);
+
+  const { error } = await query;
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "cms_section.update", "cms_section", id || key, {
+    key,
+  });
+
+  revalidatePath("/erp/content/home");
+  revalidatePath("/");
+}
+
+export async function updateShippingZone(formData: FormData) {
+  const { userId } = await requireOwner();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Zone id is required");
+
+  const fee = Number(formData.get("fee_btn") || 0);
+  const label = String(formData.get("label") || "").trim();
+  const notes = String(formData.get("notes_md") || "") || null;
+  const isActive = formData.get("is_active") === "on";
+
+  const { error } = await supabase
+    .from("shipping_zones")
+    .update({
+      fee_btn: fee,
+      label: label || undefined,
+      notes_md: notes,
+      is_active: isActive,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "shipping_zone.update", "shipping_zone", id, {
+    fee_btn: fee,
+  });
+  revalidatePath("/erp/settings");
+  revalidatePath("/checkout");
 }

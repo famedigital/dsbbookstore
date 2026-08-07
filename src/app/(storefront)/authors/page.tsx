@@ -14,50 +14,39 @@ export default async function AuthorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <Link href="/books" className="text-sm hover:text-primary">
-          Catalogue
-        </Link>
-      </header>
+    <div className="mx-auto w-full max-w-6xl px-6 py-12 pb-16">
+      <h1 className="font-heading text-4xl font-semibold">Authors</h1>
+      <p className="mt-2 text-muted-foreground">
+        Writers and contributors in the DSB catalogue.
+      </p>
 
-      <div className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <h1 className="font-heading text-4xl font-semibold">Authors</h1>
-        <p className="mt-2 text-muted-foreground">
-          Writers and contributors in the DSB catalogue.
+      {!isSupabaseConfigured() ? (
+        <p className="mt-10 text-sm text-muted-foreground">
+          Connect Supabase to load authors.
         </p>
-
-        {!isSupabaseConfigured() ? (
-          <p className="mt-10 text-sm text-muted-foreground">
-            Connect Supabase to load authors.
-          </p>
-        ) : authors.length === 0 ? (
-          <p className="mt-10 text-sm text-muted-foreground">No authors listed yet.</p>
-        ) : (
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {authors.map((author) => (
-              <li key={author.id}>
-                <Link
-                  href={`/authors/${author.slug}`}
-                  className="block rounded-lg border bg-white/80 p-5 transition hover:border-primary/40 hover:shadow-sm"
-                >
-                  <h2 className="font-heading text-xl font-medium hover:text-primary">
-                    {author.name}
-                  </h2>
-                  {author.bio ? (
-                    <p className="text-muted-foreground mt-2 line-clamp-3 text-sm">
-                      {author.bio}
-                    </p>
-                  ) : null}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      ) : authors.length === 0 ? (
+        <p className="mt-10 text-sm text-muted-foreground">No authors listed yet.</p>
+      ) : (
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {authors.map((author) => (
+            <li key={author.id}>
+              <Link
+                href={`/authors/${author.slug}`}
+                className="block rounded-lg border bg-white/80 p-5 transition hover:border-primary/40 hover:shadow-sm"
+              >
+                <h2 className="font-heading text-xl font-medium hover:text-primary">
+                  {author.name}
+                </h2>
+                {author.bio ? (
+                  <p className="text-muted-foreground mt-2 line-clamp-3 text-sm">
+                    {author.bio}
+                  </p>
+                ) : null}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

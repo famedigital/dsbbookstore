@@ -1,45 +1,30 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { getCmsPage } from "@/lib/cms/get-page";
+import { MarkdownBody } from "@/components/storefront/markdown-body";
+import { getSiteUrl } from "@/lib/storefront/site";
 
-export const metadata = { title: "Privacy Policy" };
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getCmsPage("privacy");
+  return {
+    title: page?.seo_title ?? "Privacy Policy",
+    description: page?.seo_description ?? undefined,
+    alternates: { canonical: `${getSiteUrl()}/privacy` },
+  };
+}
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const page = await getCmsPage("privacy");
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-      </header>
-      <article className="prose prose-neutral mx-auto max-w-3xl px-6 pb-16">
-        <h1>Privacy Policy</h1>
-        <p className="lead">
-          DSB Books (Thimphu) respects your privacy. This page describes how we
-          handle information submitted through our website.
-        </p>
-        <h2>Information we collect</h2>
-        <p>
-          When you submit an enquiry, we collect your name, email address,
-          optional phone number, and message. Staff ERP users authenticate via
-          Supabase Auth; their profile and role are stored for access control.
-        </p>
-        <h2>How we use it</h2>
-        <p>
-          Enquiry details are used to respond to your request about books,
-          orders, or store visits. We do not sell personal data to third parties.
-        </p>
-        <h2>Retention</h2>
-        <p>
-          Enquiries are retained in our database for customer service and
-          operational records. Contact us to request deletion where applicable
-          under local law.
-        </p>
-        <h2>Contact</h2>
-        <p>
-          Questions about privacy: visit our{" "}
-          <Link href="/visit">store page</Link> or use the{" "}
-          <Link href="/enquiry">enquiry form</Link>.
-        </p>
-      </article>
-    </div>
+    <article className="mx-auto max-w-3xl px-6 py-12 pb-20">
+      <h1 className="font-heading text-4xl font-semibold">
+        {page?.title ?? "Privacy Policy"}
+      </h1>
+      {page?.subtitle ? (
+        <p className="mt-3 text-lg text-muted-foreground">{page.subtitle}</p>
+      ) : null}
+      <div className="mt-8">
+        <MarkdownBody content={page?.body_md ?? ""} />
+      </div>
+    </article>
   );
 }
