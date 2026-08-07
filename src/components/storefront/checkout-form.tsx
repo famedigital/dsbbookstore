@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/storefront/cart-provider";
 import { placeOnlineOrder } from "@/lib/commerce/actions";
@@ -49,11 +49,8 @@ export function CheckoutForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (zoneCode === "international") {
-      setPaymentMethod("card");
-    }
-  }, [zoneCode]);
+  const effectivePayment =
+    zoneCode === "international" ? "card" : paymentMethod;
 
   const bookMap = useMemo(
     () => new Map(books.map((b) => [b.id, b])),
@@ -105,10 +102,7 @@ export function CheckoutForm({
         const fd = new FormData(form);
         fd.set("cart_json", JSON.stringify(lines));
         fd.set("zone_code", zoneCode);
-        fd.set(
-          "payment_method",
-          zoneCode === "international" ? "card" : paymentMethod
-        );
+        fd.set("payment_method", effectivePayment);
         startTransition(async () => {
           try {
             await placeOnlineOrder(fd);
@@ -155,7 +149,10 @@ export function CheckoutForm({
               name="zone_ui"
               className="mt-1"
               checked={zoneCode === z.code}
-              onChange={() => setZoneCode(z.code)}
+              onChange={() => {
+                setZoneCode(z.code);
+                if (z.code === "international") setPaymentMethod("card");
+              }}
             />
             <span>
               <span className="font-medium">{z.label}</span>
@@ -224,7 +221,7 @@ export function CheckoutForm({
               <input
                 type="radio"
                 name="payment_method_ui"
-                checked={paymentMethod === "cod"}
+                checked={effectivePayment === "cod"}
                 onChange={() => setPaymentMethod("cod")}
               />
               Cash on delivery / pickup
@@ -233,7 +230,7 @@ export function CheckoutForm({
               <input
                 type="radio"
                 name="payment_method_ui"
-                checked={paymentMethod === "transfer"}
+                checked={effectivePayment === "transfer"}
                 onChange={() => setPaymentMethod("transfer")}
               />
               Bank transfer / QR
@@ -245,7 +242,7 @@ export function CheckoutForm({
             <input
               type="radio"
               name="payment_method_ui"
-              checked={paymentMethod === "card"}
+              checked={effectivePayment === "card"}
               onChange={() => setPaymentMethod("card")}
             />
             Card (Stripe)
@@ -286,7 +283,7 @@ export function CheckoutForm({
           <span>Total</span>
           <span className="text-primary">{formatBtn(total)}</span>
         </p>
-        {paymentMethod === "card" || zoneCode === "international" ? (
+        {effectivePayment === "card" || zoneCode === "international" ? (
           <p className="text-muted-foreground mt-2 text-xs">
             Card charge ≈ USD {usdApprox.toFixed(2)} at {btnPerUsd} BTN/USD
           </p>
@@ -304,7 +301,7 @@ export function CheckoutForm({
       >
         {pending
           ? "Placing order…"
-          : paymentMethod === "card" || zoneCode === "international"
+          : effectivePayment === "card"
             ? "Pay with card"
             : "Place order"}
       </Button>

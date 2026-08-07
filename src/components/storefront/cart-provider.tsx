@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 export type CartLine = { bookId: string; qty: number };
@@ -23,6 +22,7 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 const COOKIE_KEY = "dsb_cart";
+const CART_EVENT = "dsb-cart-change";
 
 function readCookie(): CartLine[] {
   if (typeof document === "undefined") return [];
@@ -43,35 +43,51 @@ function writeCookie(lines: CartLine[]) {
   const value = encodeURIComponent(JSON.stringify(lines));
   const maxAge = 60 * 60 * 24 * 14;
   document.cookie = `${COOKIE_KEY}=${value}; path=/; max-age=${maxAge}; samesite=lax`;
+  window.dispatchEvent(new Event(CART_EVENT));
+}
+
+let cachedJson = "[]";
+let cachedLines: CartLine[] = [];
+
+function getSnapshot(): CartLine[] {
+  const next = readCookie();
+  const json = JSON.stringify(next);
+  if (json !== cachedJson) {
+    cachedJson = json;
+    cachedLines = next;
+  }
+  return cachedLines;
+}
+
+function getServerSnapshot(): CartLine[] {
+  return [];
+}
+
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener(CART_EVENT, onStoreChange);
+  return () => window.removeEventListener(CART_EVENT, onStoreChange);
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [lines, setLines] = useState<CartLine[]>([]);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setLines(readCookie());
-    setReady(true);
-  }, []);
+  const lines = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const ready = true;
 
   const persist = useCallback((next: CartLine[]) => {
-    setLines(next);
     writeCookie(next);
   }, []);
 
   const addItem = useCallback(
     (bookId: string, qty = 1) => {
-      persist(
-        (() => {
-          const existing = lines.find((l) => l.bookId === bookId);
-          if (existing) {
-            return lines.map((l) =>
-              l.bookId === bookId ? { ...l, qty: l.qty + qty } : l
-            );
-          }
-          return [...lines, { bookId, qty }];
-        })()
-      );
+      const existing = lines.find((l) => l.bookId === bookId);
+      if (existing) {
+        persist(
+          lines.map((l) =>
+            l.bookId === bookId ? { ...l, qty: l.qty + qty } : l
+          )
+        );
+        return;
+      }
+      persist([...lines, { bookId, qty }]);
     },
     [lines, persist]
   );
@@ -82,9 +98,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         persist(lines.filter((l) => l.bookId !== bookId));
         return;
       }
-      persist(
-        lines.map((l) => (l.bookId === bookId ? { ...l, qty } : l))
-      );
+      persist(lines.map((l) => (l.bookId === bookId ? { ...l, qty } : l)));
     },
     [lines, persist]
   );

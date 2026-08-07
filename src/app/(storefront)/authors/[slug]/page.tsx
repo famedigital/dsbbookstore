@@ -63,54 +63,46 @@ export default async function AuthorDetailPage({
     .filter((b): b is Book => !!b && b.is_published);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <Link href="/authors" className="text-sm hover:text-primary">
-          ← All authors
-        </Link>
-      </header>
+    <div className="mx-auto w-full max-w-6xl px-6 py-12 pb-16">
+      <Link href="/authors" className="text-sm text-muted-foreground hover:text-primary">
+        ← All authors
+      </Link>
+      <h1 className="mt-4 font-heading text-4xl font-semibold">{author.name}</h1>
+      {author.bio ? (
+        <p className="mt-4 max-w-2xl whitespace-pre-wrap leading-relaxed text-foreground/90">
+          {author.bio}
+        </p>
+      ) : null}
 
-      <div className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <h1 className="font-heading text-4xl font-semibold">{author.name}</h1>
-        {author.bio ? (
-          <p className="mt-4 max-w-2xl whitespace-pre-wrap leading-relaxed text-foreground/90">
-            {author.bio}
-          </p>
-        ) : null}
-
-        <h2 className="font-heading mt-12 text-2xl font-semibold">Books</h2>
-        {books.length === 0 ? (
-          <p className="text-muted-foreground mt-4 text-sm">
-            No published books linked to this author yet.
-          </p>
-        ) : (
-          <ul className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {books.map((book) => (
-              <li key={book.id}>
-                <Link href={`/books/${book.slug}`} className="group block">
-                  <BookCover
-                    publicId={book.cover_public_id}
-                    alt={book.title}
-                    width={400}
-                    height={600}
-                    className="aspect-[2/3] w-full rounded-sm object-cover shadow-md"
-                  />
-                  <h3 className="mt-3 font-heading text-lg group-hover:text-primary">
-                    {book.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formatBtn(book.price_btn)} ·{" "}
-                    {availabilityLabel(book.availability_status)}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <h2 className="font-heading mt-12 text-2xl font-semibold">Books</h2>
+      {books.length === 0 ? (
+        <p className="text-muted-foreground mt-4 text-sm">
+          No published books linked to this author yet.
+        </p>
+      ) : (
+        <ul className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          {books.map((book) => (
+            <li key={book.id}>
+              <Link href={`/books/${book.slug}`} className="group block">
+                <BookCover
+                  publicId={book.cover_public_id}
+                  alt={book.title}
+                  width={400}
+                  height={600}
+                  className="aspect-[2/3] w-full rounded-sm object-cover shadow-md"
+                />
+                <h3 className="mt-3 font-heading text-lg group-hover:text-primary">
+                  {book.title}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {formatBtn(book.price_btn)} ·{" "}
+                  {availabilityLabel(book.availability_status)}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

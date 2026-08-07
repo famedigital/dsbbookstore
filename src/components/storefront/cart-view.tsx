@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useCart } from "@/components/storefront/cart-provider";
 import { formatBtn } from "@/lib/erp/format";
 import { Button } from "@/components/ui/button";
@@ -17,18 +16,7 @@ export type CartBook = {
 };
 
 export function CartView({ books }: { books: CartBook[] }) {
-  const { lines, setQty, removeItem, ready, itemCount } = useCart();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted || !ready) {
-    return (
-      <p className="text-muted-foreground text-sm" aria-live="polite">
-        Loading cart…
-      </p>
-    );
-  }
+  const { lines, setQty, removeItem, itemCount } = useCart();
 
   const bookMap = new Map(books.map((b) => [b.id, b]));
   const rows = lines

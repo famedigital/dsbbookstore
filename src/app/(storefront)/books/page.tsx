@@ -34,14 +34,17 @@ export default async function BooksPage({
 }) {
   const { q, format, availability, sort } = await searchParams;
   const sortKey = sort && sort in SORTS ? (sort as keyof typeof SORTS) : "title";
-  let books: Book[] = [];
+  type BookRow = Book & {
+    book_authors?: { authors: { name: string } | null }[] | null;
+  };
+  let books: BookRow[] = [];
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
     const { column, ascending } = SORTS[sortKey];
     let query = supabase
       .from("books")
-      .select("*")
+      .select("*, book_authors(authors(name))")
       .eq("is_published", true)
       .order(column, { ascending });
 
@@ -63,26 +66,11 @@ export default async function BooksPage({
     }
 
     const { data } = await query;
-    books = (data as Book[]) ?? [];
+    books = (data as BookRow[]) ?? [];
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/authors" className="hover:text-primary">
-            Authors
-          </Link>
-          <Link href="/" className="text-muted-foreground hover:text-primary">
-            Home
-          </Link>
-        </nav>
-      </header>
-
-      <div className="mx-auto w-full max-w-6xl px-6 pb-16">
+    <div className="mx-auto w-full max-w-6xl px-6 py-12 pb-16">
         <h1 className="font-heading text-4xl font-semibold">Catalogue</h1>
         <p className="mt-2 text-muted-foreground">
           Search DSB publications and check live shelf availability.
@@ -153,7 +141,13 @@ export default async function BooksPage({
           </p>
         ) : (
           <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {books.map((book) => (
+            {books.map((book) => {
+              const authors =
+                book.book_authors
+                  ?.map((ba) => ba.authors?.name)
+                  .filter(Boolean)
+                  .join(", ") || null;
+              return (
               <li key={book.id}>
                 <Link href={`/books/${book.slug}`} className="group block">
                   <BookCover
@@ -166,20 +160,23 @@ export default async function BooksPage({
                   <h2 className="mt-3 font-heading text-lg group-hover:text-primary">
                     {book.title}
                   </h2>
+                  {authors ? (
+                    <p className="text-sm text-muted-foreground">{authors}</p>
+                  ) : null}
                   <p className="text-sm text-muted-foreground">
                     {formatBtn(book.price_btn)} ·{" "}
                     {availabilityLabel(book.availability_status)}
                   </p>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
 
         {isSupabaseConfigured() && books.length === 0 ? (
           <p className="mt-10 text-sm text-muted-foreground">No books found.</p>
         ) : null}
-      </div>
     </div>
   );
 }

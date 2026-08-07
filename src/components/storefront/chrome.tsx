@@ -13,10 +13,8 @@ export function SkipLink() {
 
 export function StorefrontShell({
   children,
-  wide = false,
 }: {
   children: React.ReactNode;
-  wide?: boolean;
 }) {
   return (
     <div className="min-h-screen bg-[linear-gradient(165deg,#f7f4ec_0%,#e8eef8_42%,#edf5f0_100%)]">
