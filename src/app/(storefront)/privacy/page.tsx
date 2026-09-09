@@ -1,18 +1,14 @@
+import { StorefrontShell } from "@/components/storefront/shell";
 import Link from "next/link";
 
 export const metadata = { title: "Privacy Policy" };
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-      </header>
-      <article className="prose prose-neutral mx-auto max-w-3xl px-6 pb-16">
-        <h1>Privacy Policy</h1>
-        <p className="lead">
+    <StorefrontShell>
+      <article className="prose prose-neutral mx-auto max-w-3xl px-6 py-14 md:py-20">
+        <h1 className="font-heading">Privacy Policy</h1>
+        <p>
           DSB Books (Thimphu) respects your privacy. This page describes how we
           handle information submitted through our website.
         </p>
@@ -40,6 +36,6 @@ export default function PrivacyPage() {
           <Link href="/enquiry">enquiry form</Link>.
         </p>
       </article>
-    </div>
+    </StorefrontShell>
   );
 }

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Libre_Bodoni } from "next/font/google";
+import { Cormorant_Garamond, Outfit, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
 });
 
 const geistMono = Geist_Mono({
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const libreBodoni = Libre_Bodoni({
+const cormorant = Cormorant_Garamond({
   variable: "--font-heading",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s · DSB Books",
   },
   description:
-    "Digital catalogue and ERP for DSB Books — Bhutan's bookstore in Thimphu.",
+    "Bhutan's oldest bookstore on Chang Lam — DSB Publication catalogue and live shelf availability in Thimphu.",
 };
 
 export default function RootLayout({
@@ -37,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${libreBodoni.variable} font-sans antialiased`}
+        className={`${outfit.variable} ${geistMono.variable} ${cormorant.variable} font-sans antialiased`}
       >
         <TooltipProvider>
           {children}

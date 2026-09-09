@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
+import { StorefrontShell } from "@/components/storefront/shell";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import { submitPublicEnquiry } from "@/lib/erp/actions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Book } from "@/types/erp";
-import { Badge } from "@/components/ui/badge";
 
 export async function generateMetadata({
   params,
@@ -70,85 +69,105 @@ export default async function BookDetailPage({
   const book = data as Book;
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <Link href="/books" className="text-sm hover:text-primary">
-          ← Catalogue
-        </Link>
-      </header>
-
-      <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 pb-20 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <BookCover
-          publicId={book.cover_public_id}
-          alt={book.title}
-          width={640}
-          height={960}
-          className="w-full rounded-sm object-cover shadow-xl"
-        />
+    <StorefrontShell active="/books">
+      <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-14 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:py-20">
+        <div className="bg-[color:var(--dsb-stone)] p-3 md:p-5">
+          <BookCover
+            publicId={book.cover_public_id}
+            alt={book.title}
+            width={640}
+            height={960}
+            className="w-full object-cover"
+          />
+        </div>
         <div>
-          <Badge variant="secondary">{availabilityLabel(book.availability_status)}</Badge>
-          <h1 className="mt-4 font-heading text-4xl font-semibold md:text-5xl">
+          <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
+            {availabilityLabel(book.availability_status)}
+          </p>
+          <h1 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.02em] md:text-6xl">
             {book.title}
           </h1>
           {book.subtitle ? (
-            <p className="mt-3 text-lg text-muted-foreground">{book.subtitle}</p>
+            <p className="mt-4 text-lg text-muted-foreground">{book.subtitle}</p>
           ) : null}
-          <p className="mt-6 text-2xl font-medium text-primary">
+          <p className="mt-8 font-heading text-3xl text-[color:var(--dsb-lacquer)]">
             {formatBtn(book.price_btn)}
           </p>
-          <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-[color:var(--dsb-line)] py-6 text-sm">
             <div>
-              <dt className="text-muted-foreground">ISBN</dt>
-              <dd>{book.isbn_13 ?? "—"}</dd>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
+                ISBN
+              </dt>
+              <dd className="mt-1">{book.isbn_13 ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Format</dt>
-              <dd className="capitalize">{book.format ?? "—"}</dd>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Format
+              </dt>
+              <dd className="mt-1 capitalize">{book.format ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Language</dt>
-              <dd>{book.language ?? "—"}</dd>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Language
+              </dt>
+              <dd className="mt-1">{book.language ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">Publisher</dt>
-              <dd>{book.publisher_name ?? "—"}</dd>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Publisher
+              </dt>
+              <dd className="mt-1">{book.publisher_name ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground">On hand</dt>
-              <dd>{book.stock_qty}</dd>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
+                On hand
+              </dt>
+              <dd className="mt-1">{book.stock_qty}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Pages
+              </dt>
+              <dd className="mt-1">{book.page_count ?? "—"}</dd>
             </div>
           </dl>
           {book.description ? (
-            <p className="mt-8 whitespace-pre-wrap leading-relaxed text-foreground/90">
+            <p className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-foreground/90">
               {book.description}
             </p>
           ) : null}
 
           {sent === "1" ? (
-            <Alert className="mt-10 border-primary/30 bg-white/90">
+            <Alert className="mt-10 rounded-none border-[color:var(--dsb-gilt)]/40 bg-[color:var(--dsb-stone)]/50">
               <AlertDescription>
                 Thank you — your enquiry has been sent. We will reply by email.
               </AlertDescription>
             </Alert>
           ) : (
-            <form action={submitPublicEnquiry} className="mt-10 space-y-3 rounded-lg border bg-white/80 p-5">
-              <h2 className="font-heading text-xl">Enquire about this book</h2>
+            <form
+              action={submitPublicEnquiry}
+              className="mt-10 space-y-3 border border-[color:var(--dsb-line)] bg-[color:var(--dsb-stone)]/35 p-6"
+            >
+              <h2 className="font-heading text-2xl">Enquire about this book</h2>
               <input type="hidden" name="book_id" value={book.id} />
               <input type="hidden" name="book_slug" value={book.slug} />
               <div className="space-y-1">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" required />
+                <Input id="name" name="name" required className="rounded-none" />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" required />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="rounded-none"
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" />
+                <Input id="phone" name="phone" className="rounded-none" />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="message">Message</Label>
@@ -156,14 +175,20 @@ export default async function BookDetailPage({
                   id="message"
                   name="message"
                   required
+                  className="rounded-none"
                   defaultValue={`I would like to enquire about "${book.title}".`}
                 />
               </div>
-              <Button type="submit">Send enquiry</Button>
+              <Button
+                type="submit"
+                className="rounded-none bg-[color:var(--dsb-lacquer)] hover:bg-[#4a1c16]"
+              >
+                Send enquiry
+              </Button>
             </form>
           )}
         </div>
       </div>
-    </div>
+    </StorefrontShell>
   );
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
+import { StorefrontShell } from "@/components/storefront/shell";
 import type { Author } from "@/types/erp";
 
 export const metadata = { title: "Authors" };
@@ -14,20 +15,16 @@ export default async function AuthorsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <Link href="/books" className="text-sm hover:text-primary">
-          Catalogue
-        </Link>
-      </header>
-
-      <div className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <h1 className="font-heading text-4xl font-semibold">Authors</h1>
-        <p className="mt-2 text-muted-foreground">
-          Writers and contributors in the DSB catalogue.
+    <StorefrontShell active="/authors">
+      <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
+        <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
+          Voices of the catalogue
+        </p>
+        <h1 className="mt-3 font-heading text-5xl font-semibold tracking-[-0.02em] md:text-6xl">
+          Authors
+        </h1>
+        <p className="mt-4 max-w-xl text-muted-foreground">
+          Writers and contributors published with DSB and stocked on Chang Lam.
         </p>
 
         {!isSupabaseConfigured() ? (
@@ -37,27 +34,31 @@ export default async function AuthorsPage() {
         ) : authors.length === 0 ? (
           <p className="mt-10 text-sm text-muted-foreground">No authors listed yet.</p>
         ) : (
-          <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-12 divide-y divide-[color:var(--dsb-line)] border-y border-[color:var(--dsb-line)]">
             {authors.map((author) => (
               <li key={author.id}>
                 <Link
                   href={`/authors/${author.slug}`}
-                  className="block rounded-lg border bg-white/80 p-5 transition hover:border-primary/40 hover:shadow-sm"
+                  className="group flex flex-col gap-2 py-7 transition-colors sm:flex-row sm:items-baseline sm:justify-between"
                 >
-                  <h2 className="font-heading text-xl font-medium hover:text-primary">
+                  <h2 className="font-heading text-3xl font-medium tracking-[-0.01em] group-hover:text-[color:var(--dsb-lacquer)]">
                     {author.name}
                   </h2>
                   {author.bio ? (
-                    <p className="text-muted-foreground mt-2 line-clamp-3 text-sm">
+                    <p className="max-w-md text-sm leading-relaxed text-muted-foreground sm:text-right">
                       {author.bio}
                     </p>
-                  ) : null}
+                  ) : (
+                    <span className="text-[0.65rem] tracking-[0.2em] text-[color:var(--dsb-gilt)] uppercase">
+                      View titles
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
           </ul>
         )}
       </div>
-    </div>
+    </StorefrontShell>
   );
 }

@@ -1,18 +1,13 @@
-import Link from "next/link";
+import { StorefrontShell } from "@/components/storefront/shell";
 
 export const metadata = { title: "Terms of Use" };
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-      </header>
-      <article className="prose prose-neutral mx-auto max-w-3xl px-6 pb-16">
-        <h1>Terms of Use</h1>
-        <p className="lead">
+    <StorefrontShell>
+      <article className="prose prose-neutral mx-auto max-w-3xl px-6 py-14 md:py-20">
+        <h1 className="font-heading">Terms of Use</h1>
+        <p>
           By using the DSB Books website you agree to these terms. The site
           provides catalogue information and enquiry forms; online checkout may
           be added in a future phase.
@@ -43,6 +38,6 @@ export default function TermsPage() {
           data.
         </p>
       </article>
-    </div>
+    </StorefrontShell>
   );
 }

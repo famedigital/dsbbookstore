@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
+import { StorefrontShell } from "@/components/storefront/shell";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import type { AvailabilityStatus, Book } from "@/types/erp";
 import { Input } from "@/components/ui/input";
@@ -67,44 +68,43 @@ export default async function BooksPage({
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ec,#eef2f8)]">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="font-heading text-2xl font-semibold text-primary">
-          DSB Books
-        </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/authors" className="hover:text-primary">
-            Authors
-          </Link>
-          <Link href="/" className="text-muted-foreground hover:text-primary">
-            Home
-          </Link>
-        </nav>
-      </header>
-
-      <div className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <h1 className="font-heading text-4xl font-semibold">Catalogue</h1>
-        <p className="mt-2 text-muted-foreground">
-          Search DSB publications and check live shelf availability.
+    <StorefrontShell active="/books">
+      <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
+        <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
+          Living catalogue
+        </p>
+        <h1 className="mt-3 font-heading text-5xl font-semibold tracking-[-0.02em] md:text-6xl">
+          Catalogue
+        </h1>
+        <p className="mt-4 max-w-xl text-muted-foreground">
+          Search DSB Publication titles and check live shelf availability in
+          Thimphu.
         </p>
 
-        <form className="mt-8 space-y-4">
+        <form className="mt-10 space-y-5 border-y border-[color:var(--dsb-line)] py-6">
           <div className="flex max-w-xl gap-2">
             <Input
               name="q"
               defaultValue={q}
               placeholder="Title, ISBN, or keyword"
-              className="bg-white"
+              className="rounded-none border-[color:var(--dsb-line)] bg-[color:var(--dsb-ivory)]"
             />
-            <Button type="submit">Search</Button>
+            <Button
+              type="submit"
+              className="rounded-none bg-[color:var(--dsb-lacquer)] hover:bg-[#4a1c16]"
+            >
+              Search
+            </Button>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Format</span>
+              <span className="text-[0.7rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Format
+              </span>
               <select
                 name="format"
                 defaultValue={format ?? ""}
-                className="border-input bg-white flex h-9 rounded-md border px-3 text-sm"
+                className="border-input flex h-9 w-full min-w-[9rem] rounded-none border bg-[color:var(--dsb-ivory)] px-3 text-sm"
               >
                 <option value="">All formats</option>
                 {FORMATS.map((f) => (
@@ -115,11 +115,13 @@ export default async function BooksPage({
               </select>
             </label>
             <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Availability</span>
+              <span className="text-[0.7rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Availability
+              </span>
               <select
                 name="availability"
                 defaultValue={availability ?? ""}
-                className="border-input bg-white flex h-9 rounded-md border px-3 text-sm"
+                className="border-input flex h-9 w-full min-w-[9rem] rounded-none border bg-[color:var(--dsb-ivory)] px-3 text-sm"
               >
                 <option value="">Any status</option>
                 {AVAILABILITY.map((a) => (
@@ -130,18 +132,25 @@ export default async function BooksPage({
               </select>
             </label>
             <label className="space-y-1 text-sm">
-              <span className="text-muted-foreground">Sort</span>
+              <span className="text-[0.7rem] tracking-[0.16em] text-muted-foreground uppercase">
+                Sort
+              </span>
               <select
                 name="sort"
                 defaultValue={sortKey}
-                className="border-input bg-white flex h-9 rounded-md border px-3 text-sm"
+                className="border-input flex h-9 w-full min-w-[9rem] rounded-none border bg-[color:var(--dsb-ivory)] px-3 text-sm"
               >
                 <option value="newest">Newest</option>
                 <option value="title">Title</option>
                 <option value="price">Price</option>
               </select>
             </label>
-            <Button type="submit" variant="secondary" size="sm">
+            <Button
+              type="submit"
+              variant="secondary"
+              size="sm"
+              className="rounded-none"
+            >
               Apply
             </Button>
           </div>
@@ -149,26 +158,30 @@ export default async function BooksPage({
 
         {!isSupabaseConfigured() ? (
           <p className="mt-10 text-sm text-muted-foreground">
-            Supabase is not connected — catalogue unavailable (no mock data).
+            Supabase is not connected — catalogue unavailable.
           </p>
         ) : (
-          <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-12 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-4">
             {books.map((book) => (
-              <li key={book.id}>
-                <Link href={`/books/${book.slug}`} className="group block">
-                  <BookCover
-                    publicId={book.cover_public_id}
-                    alt={book.title}
-                    width={400}
-                    height={600}
-                    className="aspect-[2/3] w-full rounded-sm object-cover shadow-md"
-                  />
-                  <h2 className="mt-3 font-heading text-lg group-hover:text-primary">
+              <li key={book.id} className="group">
+                <Link href={`/books/${book.slug}`} className="block">
+                  <div className="overflow-hidden bg-[color:var(--dsb-stone)]">
+                    <BookCover
+                      publicId={book.cover_public_id}
+                      alt={book.title}
+                      width={400}
+                      height={600}
+                      className="aspect-[2/3] w-full object-cover transition duration-700 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <p className="mt-5 text-[0.65rem] tracking-[0.2em] text-[color:var(--dsb-gilt)] uppercase">
+                    {availabilityLabel(book.availability_status)}
+                  </p>
+                  <h2 className="mt-2 font-heading text-2xl leading-snug font-medium group-hover:text-[color:var(--dsb-lacquer)]">
                     {book.title}
                   </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {formatBtn(book.price_btn)} ·{" "}
-                    {availabilityLabel(book.availability_status)}
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {formatBtn(book.price_btn)}
                   </p>
                 </Link>
               </li>
@@ -180,6 +193,6 @@ export default async function BooksPage({
           <p className="mt-10 text-sm text-muted-foreground">No books found.</p>
         ) : null}
       </div>
-    </div>
+    </StorefrontShell>
   );
 }
