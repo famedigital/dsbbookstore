@@ -13,6 +13,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { StoreSettings } from "@/types/erp";
+import {
+  STOREFRONT_THEMES,
+  resolveStorefrontTheme,
+} from "@/lib/storefront/themes";
 
 export default async function SettingsPage() {
   await requireOwner();
@@ -33,7 +37,10 @@ export default async function SettingsPage() {
     address_line1: null,
     low_stock_default: 3,
     receipt_footer: null,
+    storefront_theme: "uikit",
   }) as StoreSettings;
+
+  const activeTheme = resolveStorefrontTheme(store.storefront_theme);
 
   return (
     <div className="space-y-8">
@@ -42,9 +49,87 @@ export default async function SettingsPage() {
           Settings
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Store profile, contact details, and receipt configuration.
+          Store profile, storefront template, and receipt configuration.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Storefront template</CardTitle>
+          <CardDescription>
+            Switch Figma-inspired visual themes for the public website. Default
+            is Books Store App &amp; Website UI Kit.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateStoreSettings} className="space-y-6">
+            {/* Keep other fields in sync when saving theme alone — hidden duplicates filled below in main form; this form only saves theme + required name */}
+            <input type="hidden" name="store_name" value={store.store_name} />
+            <input type="hidden" name="phone" value={store.phone ?? ""} />
+            <input type="hidden" name="email" value={store.email ?? ""} />
+            <input
+              type="hidden"
+              name="opening_hours"
+              value={store.opening_hours ?? ""}
+            />
+            <input
+              type="hidden"
+              name="address_line1"
+              value={store.address_line1 ?? ""}
+            />
+            <input
+              type="hidden"
+              name="low_stock_default"
+              value={String(store.low_stock_default ?? 3)}
+            />
+            <input
+              type="hidden"
+              name="receipt_footer"
+              value={store.receipt_footer ?? ""}
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {STOREFRONT_THEMES.map((theme) => (
+                <label
+                  key={theme.id}
+                  className={`cursor-pointer rounded-xl border p-4 transition hover:border-primary ${
+                    activeTheme === theme.id
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="storefront_theme"
+                      value={theme.id}
+                      defaultChecked={activeTheme === theme.id}
+                      className="mt-1"
+                    />
+                    <div>
+                      <p className="font-medium">{theme.name}</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {theme.description}
+                      </p>
+                      {theme.figma ? (
+                        <a
+                          href={theme.figma}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary mt-2 inline-block text-xs underline"
+                        >
+                          Open Figma reference
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <Button type="submit">Save template</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -55,6 +140,11 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <form action={updateStoreSettings} className="grid gap-4 sm:grid-cols-2">
+            <input
+              type="hidden"
+              name="storefront_theme"
+              value={activeTheme}
+            />
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="store_name">Store name</Label>
               <Input

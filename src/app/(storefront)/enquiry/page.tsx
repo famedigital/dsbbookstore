@@ -1,5 +1,6 @@
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { submitPublicEnquiry } from "@/lib/erp/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,9 +16,10 @@ export default async function EnquiryPage({
   searchParams: Promise<{ sent?: string }>;
 }) {
   const { sent } = await searchParams;
+  const theme = await getStorefrontTheme();
 
   return (
-    <StorefrontShell active="/enquiry">
+    <StorefrontShell active="/enquiry" theme={theme}>
       <div className="mx-auto w-full max-w-xl px-6 py-14 md:py-20">
         <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
           Contact

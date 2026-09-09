@@ -275,6 +275,8 @@ export type StoreSettings = {
   receipt_footer: string | null;
   tax_enabled: boolean;
   tax_rate: number;
+  /** Figma storefront preset: uikit | booksaw | booketic | atelier */
+  storefront_theme?: string | null;
   updated_at: string;
 };
 

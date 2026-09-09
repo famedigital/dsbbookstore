@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import type { AvailabilityStatus, Book } from "@/types/erp";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ export default async function BooksPage({
 }) {
   const { q, format, availability, sort } = await searchParams;
   const sortKey = sort && sort in SORTS ? (sort as keyof typeof SORTS) : "title";
+  const theme = await getStorefrontTheme();
   let books: Book[] = [];
 
   if (isSupabaseConfigured()) {
@@ -68,7 +70,7 @@ export default async function BooksPage({
   }
 
   return (
-    <StorefrontShell active="/books">
+    <StorefrontShell active="/books" theme={theme}>
       <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
         <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
           Living catalogue

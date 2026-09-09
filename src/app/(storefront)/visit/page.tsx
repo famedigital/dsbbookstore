@@ -2,11 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Visit" };
 
 export default async function VisitPage() {
+  const theme = await getStorefrontTheme();
   let settings = {
     store_name: "DSB Books",
     address_line1: "Jojo's Shopping Complex, Chang Lam",
@@ -27,7 +29,7 @@ export default async function VisitPage() {
   }
 
   return (
-    <StorefrontShell active="/visit">
+    <StorefrontShell active="/visit" theme={theme}>
       <div className="relative isolate min-h-[48vh] overflow-hidden bg-[color:var(--dsb-ink)]">
         <Image
           src="/images/hero-dsb-exterior.jpg"

@@ -1,24 +1,35 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Outfit, Geist_Mono } from "next/font/google";
+import {
+  Plus_Jakarta_Sans,
+  Prata,
+  Playfair_Display,
+  Geist_Mono,
+} from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const outfit = Outfit({
+const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const prata = Prata({
+  variable: "--font-heading",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const cormorant = Cormorant_Garamond({
-  variable: "--font-heading",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +38,7 @@ export const metadata: Metadata = {
     template: "%s · DSB Books",
   },
   description:
-    "Bhutan's oldest bookstore on Chang Lam — DSB Publication catalogue and live shelf availability in Thimphu.",
+    "Bhutan's oldest bookstore on Chang Lam — DSB Publication catalogue and live shelf availability.",
 };
 
 export default function RootLayout({
@@ -38,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${geistMono.variable} ${cormorant.variable} font-sans antialiased`}
+        className={`${jakarta.variable} ${prata.variable} ${playfair.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <TooltipProvider>
           {children}

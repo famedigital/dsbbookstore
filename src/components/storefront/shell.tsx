@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import type { StorefrontThemeId } from "@/lib/storefront/themes";
 
 const NAV = [
+  { href: "/", label: "Home" },
   { href: "/books", label: "Catalogue" },
   { href: "/authors", label: "Authors" },
   { href: "/visit", label: "Visit" },
@@ -11,50 +12,38 @@ const NAV = [
 export function StorefrontHeader({
   active,
 }: {
-  active?: (typeof NAV)[number]["href"] | "/";
+  active?: (typeof NAV)[number]["href"];
 }) {
   return (
-    <header className="relative z-20 border-b border-[color:var(--dsb-line)]/70 bg-[color:var(--dsb-ivory)]/90 backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-5">
-        <Link href="/" className="group min-w-0">
-          <span className="font-heading text-[1.65rem] leading-none font-semibold tracking-[-0.02em] text-[color:var(--dsb-ink)] transition-colors group-hover:text-[color:var(--dsb-lacquer)]">
-            DSB Books
-          </span>
-          <span className="mt-1 block text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-            Thimphu · Est. bookstore
-          </span>
+    <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)] bg-[color:var(--sf-bg)]/90 backdrop-blur-md">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4">
+        <Link href="/" className="font-heading text-2xl text-[color:var(--sf-ink)] md:text-3xl">
+          DSB<span className="text-[color:var(--sf-accent)]">Books</span>
         </Link>
-        <nav className="hidden items-center gap-7 text-[0.8rem] tracking-[0.14em] text-[color:var(--dsb-ink)]/70 uppercase md:flex">
+        <nav className="hidden items-center gap-7 text-sm font-medium text-[color:var(--sf-ink)] md:flex">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`transition-colors hover:text-[color:var(--dsb-lacquer)] ${
-                active === item.href
-                  ? "text-[color:var(--dsb-lacquer)]"
-                  : ""
+              className={`transition-colors hover:text-[color:var(--sf-accent)] ${
+                active === item.href ? "text-[color:var(--sf-accent)]" : ""
               }`}
             >
               {item.label}
             </Link>
           ))}
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="ml-1 rounded-none border-[color:var(--dsb-ink)]/20 bg-transparent px-3 tracking-[0.12em] uppercase"
+        </nav>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/enquiry"
+            className="hidden text-sm text-[color:var(--sf-muted)] hover:text-[color:var(--sf-accent)] sm:inline"
           >
-            <Link href="/erp/login">Staff</Link>
-          </Button>
-        </nav>
-        <nav className="flex items-center gap-3 text-xs tracking-[0.12em] uppercase md:hidden">
-          <Link href="/books" className="text-[color:var(--dsb-lacquer)]">
-            Catalogue
+            Account
           </Link>
-          <Link href="/erp/login" className="text-[color:var(--dsb-ink)]/55">
-            Staff
+          <Link href="/books" className="sf-btn !px-4 !py-2 text-xs">
+            Shop
           </Link>
-        </nav>
+        </div>
       </div>
     </header>
   );
@@ -62,64 +51,52 @@ export function StorefrontHeader({
 
 export function StorefrontFooter() {
   return (
-    <footer className="mt-auto border-t border-[color:var(--dsb-line)] bg-[color:var(--dsb-ink)] text-[color:var(--dsb-ivory)]">
-      <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
-        <div>
-          <p className="font-heading text-3xl tracking-[-0.02em]">DSB Books</p>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-[color:var(--dsb-ivory)]/65">
-            Bhutan&apos;s oldest bookstore on Chang Lam — a living catalogue of
-            DSB Publication titles and the shelves of Thimphu.
+    <footer className="mt-auto bg-[color:var(--sf-ink)] text-white">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 md:grid-cols-4">
+        <div className="md:col-span-2">
+          <p className="font-heading text-3xl">
+            DSB<span className="text-[color:var(--sf-accent)]">Books</span>
+          </p>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/65">
+            Bhutan&apos;s oldest bookstore on Chang Lam. Browse DSB Publication
+            titles and check what&apos;s on the shelf in Thimphu.
           </p>
         </div>
         <div>
-          <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-            Visit
-          </p>
-          <p className="mt-4 text-sm leading-relaxed text-[color:var(--dsb-ivory)]/75">
+          <p className="sf-eyebrow text-[color:var(--sf-accent)]">Explore</p>
+          <ul className="mt-4 space-y-2 text-sm text-white/70">
+            {NAV.map((item) => (
+              <li key={item.href}>
+                <Link href={item.href} className="hover:text-[color:var(--sf-accent)]">
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="sf-eyebrow text-[color:var(--sf-accent)]">Visit</p>
+          <p className="mt-4 text-sm leading-relaxed text-white/70">
             Jojo&apos;s Shopping Complex
             <br />
             Chang Lam, Thimphu
             <br />
-            Bhutan
+            02 326275
           </p>
-        </div>
-        <div>
-          <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-            Explore
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-[color:var(--dsb-ivory)]/75">
-            <li>
-              <Link href="/books" className="hover:text-[color:var(--dsb-gilt)]">
-                Catalogue
-              </Link>
-            </li>
-            <li>
-              <Link href="/authors" className="hover:text-[color:var(--dsb-gilt)]">
-                Authors
-              </Link>
-            </li>
-            <li>
-              <Link href="/visit" className="hover:text-[color:var(--dsb-gilt)]">
-                Visit the store
-              </Link>
-            </li>
-            <li>
-              <Link href="/enquiry" className="hover:text-[color:var(--dsb-gilt)]">
-                Enquire
-              </Link>
-            </li>
-          </ul>
         </div>
       </div>
       <div className="border-t border-white/10">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-5 text-[0.7rem] tracking-[0.12em] text-[color:var(--dsb-ivory)]/45 uppercase">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-5 text-xs text-white/45">
           <span>© {new Date().getFullYear()} DSB Books</span>
-          <div className="flex gap-5">
-            <Link href="/privacy" className="hover:text-[color:var(--dsb-gilt)]">
+          <div className="flex gap-4">
+            <Link href="/privacy" className="hover:text-[color:var(--sf-accent)]">
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-[color:var(--dsb-gilt)]">
+            <Link href="/terms" className="hover:text-[color:var(--sf-accent)]">
               Terms
+            </Link>
+            <Link href="/erp/login" className="hover:text-[color:var(--sf-accent)]">
+              Staff
             </Link>
           </div>
         </div>
@@ -131,12 +108,17 @@ export function StorefrontFooter() {
 export function StorefrontShell({
   children,
   active,
+  theme = "uikit",
 }: {
   children: React.ReactNode;
-  active?: (typeof NAV)[number]["href"] | "/";
+  active?: (typeof NAV)[number]["href"];
+  theme?: StorefrontThemeId;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[color:var(--dsb-ivory)] text-[color:var(--dsb-ink)]">
+    <div
+      data-theme={theme}
+      className="flex min-h-screen flex-col bg-[color:var(--sf-bg)] text-[color:var(--sf-ink)]"
+    >
       <StorefrontHeader active={active} />
       <main className="flex-1">{children}</main>
       <StorefrontFooter />

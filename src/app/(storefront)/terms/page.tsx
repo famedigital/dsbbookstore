@@ -1,10 +1,12 @@
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 
 export const metadata = { title: "Terms of Use" };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const theme = await getStorefrontTheme();
   return (
-    <StorefrontShell>
+    <StorefrontShell theme={theme}>
       <article className="prose prose-neutral mx-auto max-w-3xl px-6 py-14 md:py-20">
         <h1 className="font-heading">Terms of Use</h1>
         <p>

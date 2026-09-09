@@ -386,6 +386,13 @@ export async function createExpense(formData: FormData) {
 export async function updateStoreSettings(formData: FormData) {
   await requireOwner();
   const supabase = await createClient();
+  const themeRaw = String(formData.get("storefront_theme") || "uikit");
+  const storefront_theme = ["uikit", "booksaw", "booketic", "atelier"].includes(
+    themeRaw,
+  )
+    ? themeRaw
+    : "uikit";
+
   const { error } = await supabase
     .from("store_settings")
     .update({
@@ -396,11 +403,17 @@ export async function updateStoreSettings(formData: FormData) {
       address_line1: String(formData.get("address_line1") || "") || null,
       low_stock_default: Number(formData.get("low_stock_default") || 3),
       receipt_footer: String(formData.get("receipt_footer") || "") || null,
+      storefront_theme,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
   if (error) throw new Error(error.message);
   revalidatePath("/erp/settings");
+  revalidatePath("/");
+  revalidatePath("/books");
+  revalidatePath("/authors");
+  revalidatePath("/visit");
+  revalidatePath("/enquiry");
 }
 
 export async function updateStaffRole(formData: FormData) {

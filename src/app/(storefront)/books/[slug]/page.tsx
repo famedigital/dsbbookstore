@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import { submitPublicEnquiry } from "@/lib/erp/actions";
 import { Button } from "@/components/ui/button";
@@ -67,9 +68,10 @@ export default async function BookDetailPage({
 
   if (!data) notFound();
   const book = data as Book;
+  const theme = await getStorefrontTheme();
 
   return (
-    <StorefrontShell active="/books">
+    <StorefrontShell active="/books" theme={theme}>
       <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-14 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:py-20">
         <div className="bg-[color:var(--dsb-stone)] p-3 md:p-5">
           <BookCover

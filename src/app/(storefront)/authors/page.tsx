@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import type { Author } from "@/types/erp";
 
 export const metadata = { title: "Authors" };
 
 export default async function AuthorsPage() {
+  const theme = await getStorefrontTheme();
   let authors: Author[] = [];
 
   if (isSupabaseConfigured()) {
@@ -15,7 +17,7 @@ export default async function AuthorsPage() {
   }
 
   return (
-    <StorefrontShell active="/authors">
+    <StorefrontShell active="/authors" theme={theme}>
       <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
         <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
           Voices of the catalogue

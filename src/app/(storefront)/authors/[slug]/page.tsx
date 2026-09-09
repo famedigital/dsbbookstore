@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import type { Author, Book } from "@/types/erp";
 
@@ -63,8 +64,10 @@ export default async function AuthorDetailPage({
     })
     .filter((b): b is Book => !!b && b.is_published);
 
+  const theme = await getStorefrontTheme();
+
   return (
-    <StorefrontShell active="/authors">
+    <StorefrontShell active="/authors" theme={theme}>
       <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
         <Link
           href="/authors"
