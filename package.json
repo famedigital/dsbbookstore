@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'"
+    "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'",
+    "db:seed": "node scripts/seed-sample-books.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

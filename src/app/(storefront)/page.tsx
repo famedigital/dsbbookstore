@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -54,32 +55,41 @@ export default async function HomePage() {
         </nav>
       </header>
 
-      <section className="relative mx-auto grid min-h-[78vh] w-full max-w-6xl items-end overflow-hidden px-6 pb-16 pt-10">
-        <div className="absolute inset-0 -z-10 rounded-[2rem] bg-[radial-gradient(ellipse_at_30%_20%,#0b3d91_0%,transparent_55%),radial-gradient(ellipse_at_90%_80%,#0f6b4c_0%,transparent_45%),linear-gradient(135deg,#071a3a,#0b3d91_50%,#0a4a38)]" />
-        <div className="absolute inset-0 -z-10 rounded-[2rem] opacity-40 [background-image:url('data:image/svg+xml,%3Csvg width=%2760%27 height=%2760%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpath d=%27M0 60L60 0M30 60L60 30M0 30L30 0%27 stroke=%27%23ffffff%27 stroke-opacity=%270.06%27 fill=%27none%27/%3E%3C/svg%3E')]" />
-        <div className="max-w-xl text-white">
-          <p className="text-xs tracking-[0.28em] text-[#e6c76a] uppercase">
-            Thimphu · Chang Lam
-          </p>
-          <h1 className="mt-4 font-heading text-5xl leading-[1.05] font-semibold md:text-6xl">
-            {settings?.store_name ?? "DSB Books"}
-          </h1>
-          <p className="mt-5 max-w-md text-base text-white/85 md:text-lg">
-            Bhutan&apos;s oldest bookstore — a living digital catalogue of DSB
-            publications. Search, browse, and know what&apos;s on the shelf.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="bg-[#e6c76a] text-[#2a2108] hover:bg-[#f0d789]">
-              <Link href="/books">Browse catalogue</Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/40 bg-transparent text-white hover:bg-white/10"
-            >
-              <Link href="/visit">Visit the store</Link>
-            </Button>
+      <section className="relative grid min-h-[78vh] w-full items-end overflow-hidden">
+        <Image
+          src="/images/hero-bookstore.jpg"
+          alt="Shelves of books in a bookstore"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(7,26,58,0.88)_0%,rgba(11,61,145,0.62)_48%,rgba(10,74,56,0.35)_100%)]" />
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-28">
+          <div className="max-w-xl text-white">
+            <p className="text-xs tracking-[0.28em] text-[#e6c76a] uppercase">
+              Thimphu · Chang Lam
+            </p>
+            <h1 className="mt-4 font-heading text-5xl leading-[1.05] font-semibold md:text-6xl">
+              {settings?.store_name ?? "DSB Books"}
+            </h1>
+            <p className="mt-5 max-w-md text-base text-white/85 md:text-lg">
+              Bhutan&apos;s oldest bookstore — a living digital catalogue of DSB
+              publications. Search, browse, and know what&apos;s on the shelf.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg" className="bg-[#e6c76a] text-[#2a2108] hover:bg-[#f0d789]">
+                <Link href="/books">Browse catalogue</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-white/40 bg-transparent text-white hover:bg-white/10"
+              >
+                <Link href="/visit">Visit the store</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>

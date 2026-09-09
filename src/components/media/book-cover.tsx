@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { CldImage } from "next-cloudinary";
 import { buildCoverUrl } from "@/lib/cloudinary-url";
 
@@ -31,7 +32,15 @@ function Placeholder({
   );
 }
 
-/** Cloudinary-optimized cover. Falls back to a calm placeholder when unset. */
+function isLocalOrRemoteSrc(value: string) {
+  return (
+    value.startsWith("/") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://")
+  );
+}
+
+/** Cloudinary-optimized cover. Falls back to local/remote src, then placeholder. */
 export function BookCover({
   publicId,
   alt,
@@ -43,6 +52,34 @@ export function BookCover({
   if (!publicId) {
     return (
       <Placeholder alt={alt} width={width} height={height} className={className} />
+    );
+  }
+
+  if (isLocalOrRemoteSrc(publicId)) {
+    // Local sample SVGs and remote URLs — skip Cloudinary pipeline.
+    if (publicId.endsWith(".svg") || publicId.startsWith("http")) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={publicId}
+          alt={alt}
+          width={width}
+          height={height}
+          className={className}
+          loading="lazy"
+        />
+      );
+    }
+
+    return (
+      <Image
+        src={publicId}
+        alt={alt}
+        width={width}
+        height={height}
+        sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
+        className={className}
+      />
     );
   }
 
