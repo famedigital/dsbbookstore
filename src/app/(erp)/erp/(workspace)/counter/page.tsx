@@ -60,7 +60,7 @@ export default async function CounterPage() {
       )
       .gt("stock_qty", 0)
       .order("title");
-    stockRows = fallback;
+    stockRows = (fallback ?? null) as typeof items;
   }
 
   const itemList = ((stockRows ?? []) as Record<string, unknown>[]).map((row) => ({
