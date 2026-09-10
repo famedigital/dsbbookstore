@@ -40,6 +40,8 @@ export async function upsertBook(formData: FormData) {
     ? kindRaw
     : "book";
 
+  const openingRaw = String(formData.get("opening_qty") || "").trim();
+  const brandRaw = String(formData.get("brand") || "").trim();
   const payload = {
     title,
     subtitle: String(formData.get("subtitle") || "") || null,
@@ -49,6 +51,7 @@ export async function upsertBook(formData: FormData) {
     barcode: String(formData.get("barcode") || "") || null,
     sku_code: String(formData.get("sku_code") || "") || null,
     product_kind,
+    brand: brandRaw || null,
     language: String(formData.get("language") || "English"),
     format: String(formData.get("format") || "paperback"),
     publisher_name: String(formData.get("publisher_name") || "DSB Publication"),
@@ -58,6 +61,7 @@ export async function upsertBook(formData: FormData) {
       profile.role === "staff"
         ? undefined
         : Number(formData.get("cost_price_btn") || 0),
+    opening_qty: openingRaw ? Math.max(0, Number(openingRaw) || 0) : undefined,
     cover_public_id: String(formData.get("cover_public_id") || "") || null,
     is_published: formData.get("is_published") === "on",
     is_featured: formData.get("is_featured") === "on",
@@ -375,11 +379,36 @@ export async function createPurchaseOrder(formData: FormData) {
   const supabase = await createClient();
   const supplierId = String(formData.get("supplier_id") || "") || null;
   const notes = String(formData.get("notes") || "") || null;
-  const bookId = String(formData.get("book_id"));
-  const qty = Number(formData.get("qty_ordered") || 0);
-  const unitCost = Number(formData.get("unit_cost_btn") || 0);
+  const invoiceRef = String(formData.get("invoice_ref") || "").trim() || null;
+  const notesMerged = [invoiceRef ? `Invoice: ${invoiceRef}` : null, notes]
+    .filter(Boolean)
+    .join("\n") || null;
 
-  if (!bookId || qty <= 0) throw new Error("Book and quantity required");
+  type LineIn = { book_id: string; qty_ordered: number; unit_cost_btn: number };
+  let lines: LineIn[] = [];
+  const linesRaw = String(formData.get("lines") || "").trim();
+  if (linesRaw) {
+    const parsed = JSON.parse(linesRaw) as LineIn[];
+    if (!Array.isArray(parsed) || !parsed.length) {
+      throw new Error("Add at least one line");
+    }
+    lines = parsed
+      .map((l) => ({
+        book_id: String(l.book_id || ""),
+        qty_ordered: Math.max(0, Math.round(Number(l.qty_ordered) || 0)),
+        unit_cost_btn: Number(l.unit_cost_btn) || 0,
+      }))
+      .filter((l) => l.book_id && l.qty_ordered > 0);
+  } else {
+    const bookId = String(formData.get("book_id") || "");
+    const qty = Number(formData.get("qty_ordered") || 0);
+    const unitCost = Number(formData.get("unit_cost_btn") || 0);
+    if (bookId && qty > 0) {
+      lines = [{ book_id: bookId, qty_ordered: qty, unit_cost_btn: unitCost }];
+    }
+  }
+
+  if (!lines.length) throw new Error("Add at least one product line");
 
   const number = poNumber();
   const { data: po, error } = await supabase
@@ -389,22 +418,28 @@ export async function createPurchaseOrder(formData: FormData) {
       supplier_id: supplierId,
       status: "ordered",
       ordered_at: new Date().toISOString(),
-      notes,
+      notes: notesMerged,
       created_by: userId,
     })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
 
-  const { error: itemError } = await supabase.from("purchase_order_items").insert({
-    purchase_order_id: po.id,
-    book_id: bookId,
-    qty_ordered: qty,
-    unit_cost_btn: unitCost,
-  });
+  const { error: itemError } = await supabase.from("purchase_order_items").insert(
+    lines.map((l) => ({
+      purchase_order_id: po.id,
+      book_id: l.book_id,
+      qty_ordered: l.qty_ordered,
+      unit_cost_btn: l.unit_cost_btn,
+    }))
+  );
   if (itemError) throw new Error(itemError.message);
 
-  await audit(userId, "po.create", "purchase_order", po.id, { po_number: number });
+  await audit(userId, "po.create", "purchase_order", po.id, {
+    po_number: number,
+    lines: lines.length,
+    invoice_ref: invoiceRef,
+  });
   revalidatePath("/erp/purchasing");
 }
 
@@ -420,6 +455,33 @@ export async function receivePurchaseOrder(formData: FormData) {
   if (error) throw new Error(error.message);
   if (!items?.length) throw new Error("PO has no items");
 
+  type Recv = { item_id: string; qty: number };
+  const linesRaw = String(formData.get("lines") || "").trim();
+  let receivePlan: { item: (typeof items)[0]; qty: number }[] = [];
+
+  if (linesRaw) {
+    const parsed = JSON.parse(linesRaw) as Recv[];
+    const byId = new Map(items.map((i) => [i.id, i]));
+    for (const row of parsed) {
+      const item = byId.get(String(row.item_id));
+      if (!item) continue;
+      const remaining = item.qty_ordered - item.qty_received;
+      const qty = Math.min(
+        remaining,
+        Math.max(0, Math.round(Number(row.qty) || 0))
+      );
+      if (qty > 0) receivePlan.push({ item, qty });
+    }
+  } else {
+    // Receive all remaining (legacy one-click)
+    for (const item of items) {
+      const remaining = item.qty_ordered - item.qty_received;
+      if (remaining > 0) receivePlan.push({ item, qty: remaining });
+    }
+  }
+
+  if (!receivePlan.length) throw new Error("Nothing to receive");
+
   const { data: receipt, error: grError } = await supabase
     .from("goods_receipts")
     .insert({ purchase_order_id: poId, received_by: userId })
@@ -427,46 +489,100 @@ export async function receivePurchaseOrder(formData: FormData) {
     .single();
   if (grError) throw new Error(grError.message);
 
-  for (const item of items) {
-    const remaining = item.qty_ordered - item.qty_received;
-    if (remaining <= 0) continue;
-
+  for (const { item, qty } of receivePlan) {
     await supabase.from("goods_receipt_items").insert({
       goods_receipt_id: receipt.id,
       book_id: item.book_id,
-      qty: remaining,
+      qty,
       unit_cost_btn: item.unit_cost_btn,
     });
 
     await supabase
       .from("purchase_order_items")
-      .update({ qty_received: item.qty_ordered })
+      .update({ qty_received: item.qty_received + qty })
       .eq("id", item.id);
 
     await supabase.from("stock_movements").insert({
       book_id: item.book_id,
       movement_type: "purchase_in",
-      qty_delta: remaining,
+      qty_delta: qty,
       reason: `Goods receipt for PO`,
       reference_type: "goods_receipt",
       reference_id: receipt.id,
       created_by: userId,
     });
 
-    await supabase
-      .from("books")
-      .update({ cost_price_btn: item.unit_cost_btn })
-      .eq("id", item.book_id);
+    if (Number(item.unit_cost_btn) > 0) {
+      await supabase
+        .from("books")
+        .update({ cost_price_btn: item.unit_cost_btn })
+        .eq("id", item.book_id);
+    }
   }
+
+  const { data: refreshed } = await supabase
+    .from("purchase_order_items")
+    .select("qty_ordered, qty_received")
+    .eq("purchase_order_id", poId);
+
+  const allDone = (refreshed ?? []).every(
+    (i) => i.qty_received >= i.qty_ordered
+  );
+  const anyRecv = (refreshed ?? []).some((i) => i.qty_received > 0);
 
   await supabase
     .from("purchase_orders")
-    .update({ status: "received", updated_at: new Date().toISOString() })
+    .update({
+      status: allDone ? "received" : anyRecv ? "partial" : "ordered",
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", poId);
 
-  await audit(userId, "po.receive", "purchase_order", poId);
+  await audit(userId, "po.receive", "purchase_order", poId, {
+    lines: receivePlan.length,
+    partial: !allDone,
+  });
   revalidatePath("/erp/purchasing");
   revalidatePath("/erp/inventory");
+  revalidatePath("/erp/catalogue");
+}
+
+export async function commitStocktake(input: {
+  lines: { bookId: string; physicalQty: number; systemQty: number }[];
+  note?: string;
+}) {
+  const { userId } = await requireManager();
+  const supabase = await createClient();
+  const note = (input.note || "Stock count").trim();
+
+  if (!input.lines?.length) throw new Error("No count lines");
+
+  let posted = 0;
+  for (const line of input.lines) {
+    const physical = Math.max(0, Math.round(Number(line.physicalQty) || 0));
+    const system = Math.round(Number(line.systemQty) || 0);
+    const delta = physical - system;
+    if (delta === 0) continue;
+
+    const { error } = await supabase.from("stock_movements").insert({
+      book_id: line.bookId,
+      movement_type: "count_adjust",
+      qty_delta: delta,
+      reason: note,
+      reference_type: "stocktake",
+      created_by: userId,
+    });
+    if (error) throw new Error(error.message);
+    posted += 1;
+  }
+
+  await audit(userId, "stock.count", "stocktake", undefined, {
+    lines: input.lines.length,
+    posted,
+  });
+  revalidatePath("/erp/inventory");
+  revalidatePath("/erp/catalogue");
+  return { posted };
 }
 
 export async function createSupplier(formData: FormData) {

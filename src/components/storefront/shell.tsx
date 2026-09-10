@@ -5,19 +5,14 @@ import {
   FOOTER_SHOP,
   FOOTER_ABOUT,
 } from "@/lib/storefront/institutional";
+import { DsbLogo } from "@/components/brand/dsb-logo";
 
 export function StorefrontHeader({ active }: { active?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)]/70 bg-[color:var(--sf-bg)]/95 backdrop-blur-xl sf-dzong-top">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-0 px-0 md:flex-row md:items-center md:gap-6 md:px-6 md:py-3">
         <div className="flex items-center px-4 py-2.5 md:px-0 md:py-0">
-          <Link
-            href="/"
-            className="shrink-0 font-heading text-xl tracking-tight text-[color:var(--sf-ink)] md:text-2xl"
-          >
-            DSB
-            <span className="text-[color:var(--sf-accent)]">Books</span>
-          </Link>
+          <DsbLogo variant="lacquer" size={40} />
         </div>
 
         <nav
@@ -48,10 +43,7 @@ export function StorefrontFooter() {
     <footer className="sf-textile mt-auto bg-[color:var(--sf-night,#1a2430)] text-[color:var(--sf-ivory,#f7f2e8)] sf-dzong-top">
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:grid-cols-4 md:gap-10 md:px-6 md:py-14">
         <div className="md:col-span-1">
-          <p className="font-heading text-2xl md:text-3xl">
-            DSB
-            <span className="text-[color:var(--sf-gilt,#9c7a3e)]">Books</span>
-          </p>
+          <DsbLogo variant="white" size={52} />
           <p className="mt-3 max-w-md text-sm leading-relaxed text-white/60">
             Bhutan&apos;s bookstore on Chang Lam — books, stationery, and a
             bridge for culture and learning.

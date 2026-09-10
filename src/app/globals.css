@@ -49,8 +49,56 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ========== UI Kit (default) — Books Store App & Website UI Kit ========== */
-:root,
+/* ========== App / ERP default — Chang Lam lacquer (not indigo) ========== */
+:root {
+  --sf-bg: #efe6d6;
+  --sf-surface: #f7f1e6;
+  --sf-ink: #14110f;
+  --sf-muted: #6a6358;
+  --sf-accent: #5c241c;
+  --sf-accent-soft: #e8dfd0;
+  --sf-accent-hover: #3f1812;
+  --sf-line: #d2c7b0;
+  --sf-hero: #efe6d6;
+  --sf-radius: 0.15rem;
+  --sf-btn-radius: 0;
+  --sf-card-shadow: 0 18px 48px rgba(20, 17, 15, 0.1);
+
+  --background: #f4f0e8;
+  --foreground: #14110f;
+  --card: #faf6ef;
+  --card-foreground: #14110f;
+  --popover: #faf6ef;
+  --popover-foreground: #14110f;
+  --primary: #5c241c;
+  --primary-foreground: #f7f2e8;
+  --secondary: #ebe4d6;
+  --secondary-foreground: #14110f;
+  --muted: #ebe4d6;
+  --muted-foreground: #6a6358;
+  --accent: #5c241c;
+  --accent-foreground: #f7f2e8;
+  --destructive: oklch(0.55 0.2 25);
+  --border: #d6cdb8;
+  --input: #d6cdb8;
+  --ring: #9c7a3e;
+  --chart-1: #5c241c;
+  --chart-2: #24352c;
+  --chart-3: #9c7a3e;
+  --chart-4: #6a6358;
+  --chart-5: #ebe4d6;
+  --radius: 0.35rem;
+  --sidebar: #14110f;
+  --sidebar-foreground: #f7f2e8;
+  --sidebar-primary: #c9a227;
+  --sidebar-primary-foreground: #14110f;
+  --sidebar-accent: #24352c;
+  --sidebar-accent-foreground: #f7f2e8;
+  --sidebar-border: #2a2420;
+  --sidebar-ring: #9c7a3e;
+}
+
+/* ========== UI Kit storefront theme ========== */
 [data-theme="uikit"] {
   --sf-bg: #f6f7fb;
   --sf-surface: #ffffff;
@@ -479,11 +527,179 @@
   animation: sf-rise 0.85s ease 0.12s both;
 }
 
+/* Featured title hero — bigger, richer, still first-viewport fit */
+.sf-featured-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--sf-hero);
+  min-height: min(78svh, 40rem);
+  display: flex;
+  align-items: center;
+}
+
+.sf-featured-hero::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: auto -20% -40% 40%;
+  height: 70%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--sf-accent) 18%, transparent),
+    transparent 68%
+  );
+  filter: blur(8px);
+}
+
+.sf-featured-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sf-featured-hero__title {
+  font-family: var(--font-heading), Georgia, serif;
+  color: var(--sf-ink);
+  font-size: clamp(1.65rem, 4.8vw, 3.35rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+.sf-featured-hero__price {
+  font-family: var(--font-heading), Georgia, serif;
+  color: var(--sf-accent);
+  font-size: clamp(1.5rem, 3.2vw, 2.35rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.sf-featured-hero__btn {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  padding-inline: 1.35rem;
+  padding-block: 0.85rem;
+}
+
+.sf-featured-hero__cover {
+  position: relative;
+  width: 100%;
+  max-width: 22rem;
+  margin-inline: auto;
+  animation: sf-cover-in 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.sf-featured-hero__cover-stage {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: calc(var(--sf-radius) + 0.35rem);
+  box-shadow:
+    0 28px 60px -18px color-mix(in srgb, var(--sf-ink) 45%, transparent),
+    0 10px 24px -12px color-mix(in srgb, var(--sf-accent) 35%, transparent);
+  transform-origin: 50% 80%;
+  animation: sf-cover-float 7s ease-in-out 1s infinite;
+}
+
+.sf-featured-hero__cover-stage img,
+.sf-featured-hero__cover-stage > * {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.sf-featured-hero__gilt {
+  width: 3.5rem;
+  height: 2px;
+  margin-top: 0.65rem;
+  background: linear-gradient(
+    90deg,
+    var(--sf-gilt, var(--sf-accent)),
+    color-mix(in srgb, var(--sf-accent) 40%, transparent)
+  );
+}
+
+@keyframes sf-cover-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sf-cover-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@media (max-width: 767px) {
+  .sf-featured-hero {
+    min-height: unset;
+    align-items: stretch;
+    padding-block: 1.25rem 1.5rem;
+  }
+
+  .sf-featured-hero__title {
+    font-size: clamp(1.45rem, 7.2vw, 1.85rem);
+    line-height: 1.12;
+  }
+
+  .sf-featured-hero__price {
+    font-size: 1.55rem;
+  }
+
+  .sf-featured-hero__btn {
+    padding-inline: 1rem;
+    padding-block: 0.7rem;
+    font-size: 0.72rem;
+  }
+
+  .sf-featured-hero__cover {
+    max-width: none;
+    width: min(42vw, 11.5rem);
+  }
+
+  .sf-featured-hero__cover-stage {
+    animation: none;
+    box-shadow:
+      0 18px 36px -14px color-mix(in srgb, var(--sf-ink) 40%, transparent),
+      0 6px 16px -8px color-mix(in srgb, var(--sf-accent) 30%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .sf-featured-hero {
+    min-height: min(82svh, 46rem);
+    padding-block: 2.5rem 3rem;
+  }
+
+  .sf-featured-hero__cover {
+    max-width: min(28rem, 42vw);
+  }
+}
+
 [data-theme="atelier"] .sf-textile::before {
   animation: sf-textile-drift 48s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sf-featured-hero__cover,
+  .sf-featured-hero__cover-stage {
+    animation: none;
+  }
+
   .sf-btn,
   .sf-btn-outline,
   .sf-btn-pine,

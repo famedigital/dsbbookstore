@@ -62,7 +62,8 @@ export default async function CataloguePage({
             Products
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Books, stationery, and other stock for Counter and the website.
+            Stock Register columns: Product, Brand, Pur Rate, Sal Rate, Opening,
+            Closing, Clo Val, UPCEAN.
           </p>
         </div>
         <Button asChild>
@@ -95,53 +96,68 @@ export default async function CataloguePage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Catalogue</CardTitle>
+          <CardTitle className="text-base">Stock Register</CardTitle>
           <CardDescription>{list.length} product(s)</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kind</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Availability</TableHead>
-                <TableHead>Published</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Brand</TableHead>
+                <TableHead className="text-right">Pur Rate</TableHead>
+                <TableHead className="text-right">Sal Rate</TableHead>
+                <TableHead className="text-right">Opening</TableHead>
+                <TableHead className="text-right">Closing</TableHead>
+                <TableHead className="text-right">Clo Val</TableHead>
+                <TableHead>UPCEAN</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-muted-foreground">
-                    No products yet.
+                  <TableCell colSpan={10} className="text-muted-foreground">
+                    No products yet. Import the Stock Register Excel to load the
+                    shop catalogue.
                   </TableCell>
                 </TableRow>
               ) : (
                 list.map((book) => (
                   <TableRow key={book.id}>
-                    <TableCell>
-                      <Badge variant="outline">
+                    <TableCell className="max-w-[220px]">
+                      <div className="truncate font-medium">{book.title}</div>
+                      <Badge variant="outline" className="mt-1 text-[10px]">
                         {kindLabel(book.product_kind)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate font-medium">
-                      {book.title}
+                    <TableCell className="text-muted-foreground max-w-[140px] truncate text-sm">
+                      {book.brand || "—"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {book.isbn_13 || book.barcode || book.sku_code || "—"}
+                    <TableCell className="text-right tabular-nums text-sm">
+                      {formatBtn(book.cost_price_btn)}
                     </TableCell>
-                    <TableCell>{formatBtn(book.price_btn)}</TableCell>
-                    <TableCell>{book.stock_qty}</TableCell>
+                    <TableCell className="text-right tabular-nums text-sm">
+                      {formatBtn(book.price_btn)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-sm">
+                      {book.opening_qty ?? 0}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-sm font-medium">
+                      {book.stock_qty}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-sm">
+                      {formatBtn(
+                        book.clo_val_btn ??
+                          Number(book.stock_qty) * Number(book.price_btn)
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs">
+                      {book.barcode || book.isbn_13 || "—"}
+                    </TableCell>
                     <TableCell>
                       <AvailabilityBadge status={book.availability_status} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={book.is_published ? "default" : "outline"}>
-                        {book.is_published ? "Yes" : "No"}
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm" asChild>

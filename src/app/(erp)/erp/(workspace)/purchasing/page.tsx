@@ -1,14 +1,14 @@
 import { requireManager } from "@/lib/erp/auth";
-import {
-  createPurchaseOrder,
-  createSupplier,
-  receivePurchaseOrder,
-} from "@/lib/erp/actions";
+import { createSupplier } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
+import { PurchaseBillForm } from "@/components/erp/purchase-bill-form";
+import {
+  PurchaseRegister,
+  type PoListItem,
+} from "@/components/erp/purchase-register";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -25,29 +25,30 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { PurchaseOrder, Supplier } from "@/types/erp";
-
-type PoRow = PurchaseOrder & {
-  suppliers: { name: string } | null;
-};
+import type { Supplier } from "@/types/erp";
 
 export default async function PurchasingPage() {
   await requireManager();
   const supabase = await createClient();
 
-  const [{ data: suppliers }, { data: books }, { data: purchaseOrders }] =
-    await Promise.all([
-      supabase.from("suppliers").select("*").order("name"),
-      supabase.from("books").select("id, title, product_kind").order("title"),
-      supabase
-        .from("purchase_orders")
-        .select("*, suppliers(name)")
-        .order("created_at", { ascending: false }),
-    ]);
+  const [{ data: suppliers }, { data: purchaseOrders }] = await Promise.all([
+    supabase.from("suppliers").select("*").order("name"),
+    supabase
+      .from("purchase_orders")
+      .select(
+        "id, po_number, status, ordered_at, notes, suppliers(name), purchase_order_items(id, book_id, qty_ordered, qty_received, unit_cost_btn, books(title, barcode))"
+      )
+      .order("created_at", { ascending: false }),
+  ]);
 
   const supplierList = (suppliers ?? []) as Supplier[];
-  const bookOptions = books ?? [];
-  const poList = (purchaseOrders ?? []) as PoRow[];
+  const poList = ((purchaseOrders ?? []) as Omit<PoListItem, "invoice_ref">[]).map(
+    (po) => ({
+      ...po,
+      invoice_ref:
+        po.notes?.match(/^Invoice:\s*(.+)$/m)?.[1]?.trim() ?? null,
+    })
+  ) as PoListItem[];
 
   return (
     <div className="space-y-8">
@@ -56,7 +57,7 @@ export default async function PurchasingPage() {
           Purchasing
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Suppliers, purchase bills, and goods receipt into product stock.
+          Multi-line supplier bills, partial goods receipt, stock via ledger.
         </p>
       </div>
 
@@ -93,78 +94,28 @@ export default async function PurchasingPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Add bill</CardTitle>
+            <CardTitle className="text-base">New purchase bill</CardTitle>
             <CardDescription>
-              Purchase order / supplier bill — receive into any product
+              Search products, add lines, set Pur Rate — then receive later
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={createPurchaseOrder} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier_id">Supplier</Label>
-                <select
-                  id="supplier_id"
-                  name="supplier_id"
-                  className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
-                >
-                  <option value="">No supplier</option>
-                  {supplierList.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="book_id">Product</Label>
-                <select
-                  id="book_id"
-                  name="book_id"
-                  required
-                  className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
-                >
-                  <option value="">Select a product…</option>
-                  {bookOptions.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.title}
-                      {"product_kind" in b && b.product_kind
-                        ? ` · ${String(b.product_kind)}`
-                        : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="qty_ordered">Quantity</Label>
-                  <Input
-                    id="qty_ordered"
-                    name="qty_ordered"
-                    type="number"
-                    min="1"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="unit_cost_btn">Unit cost (BTN)</Label>
-                  <Input
-                    id="unit_cost_btn"
-                    name="unit_cost_btn"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea id="notes" name="notes" rows={2} />
-              </div>
-              <Button type="submit">Create bill</Button>
-            </form>
+            <PurchaseBillForm suppliers={supplierList} />
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Purchase bills</CardTitle>
+          <CardDescription>
+            {poList.length} bill(s) · expand to partial-receive lines
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PurchaseRegister orders={poList} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -206,72 +157,6 @@ export default async function PurchasingPage() {
                       <Badge variant={s.is_active ? "default" : "outline"}>
                         {s.is_active ? "Yes" : "No"}
                       </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Purchase bills</CardTitle>
-          <CardDescription>{poList.length} bill(s)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>PO #</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ordered</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {poList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
-                    No purchase orders yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                poList.map((po) => (
-                  <TableRow key={po.id}>
-                    <TableCell className="font-mono text-xs">
-                      {po.po_number}
-                    </TableCell>
-                    <TableCell>{po.suppliers?.name ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {po.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {po.ordered_at
-                        ? new Date(po.ordered_at).toLocaleDateString("en-BT")
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {po.status !== "received" ? (
-                        <form action={receivePurchaseOrder}>
-                          <input
-                            type="hidden"
-                            name="purchase_order_id"
-                            value={po.id}
-                          />
-                          <Button type="submit" size="sm" variant="outline">
-                            Receive
-                          </Button>
-                        </form>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">
-                          Received
-                        </span>
-                      )}
                     </TableCell>
                   </TableRow>
                 ))

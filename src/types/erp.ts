@@ -83,15 +83,19 @@ export type Profile = {
 
 export type Book = {
   id: string;
+  /** Stock Register: Product */
   title: string;
   subtitle: string | null;
   slug: string;
   description: string | null;
   isbn_13: string | null;
   isbn_10: string | null;
+  /** Stock Register: UPCEAN */
   barcode: string | null;
   sku_code: string | null;
   product_kind: ProductKind;
+  /** Stock Register: Brand (author / imprint) */
+  brand: string | null;
   language: string | null;
   format: string | null;
   page_count: number | null;
@@ -99,10 +103,17 @@ export type Book = {
   weight_grams: number | null;
   published_at: string | null;
   publisher_name: string | null;
+  /** Stock Register: Pur Rate */
   cost_price_btn: number;
+  /** Stock Register: Sal Rate */
   price_btn: number;
   compare_at_price_btn: number | null;
+  /** Stock Register: Opening */
+  opening_qty: number;
+  /** Stock Register: Closing */
   stock_qty: number;
+  /** Stock Register: Clo Val */
+  clo_val_btn: number;
   low_stock_threshold: number | null;
   availability_status: AvailabilityStatus;
   cover_public_id: string | null;

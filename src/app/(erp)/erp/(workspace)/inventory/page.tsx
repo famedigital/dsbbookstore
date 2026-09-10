@@ -1,11 +1,8 @@
 import { requireStaff } from "@/lib/erp/auth";
-import { adjustStock } from "@/lib/erp/actions";
 import { createClient } from "@/lib/supabase/server";
 import { AvailabilityBadge } from "@/components/erp/availability-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { StocktakePanel } from "@/components/erp/stocktake-panel";
+import { InventoryAdjustForm } from "@/components/erp/inventory-adjust-form";
 import {
   Card,
   CardContent,
@@ -22,40 +19,51 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Book, StockMovement, StockMovementType } from "@/types/erp";
+import type { Book, StockMovement } from "@/types/erp";
 
 type MovementRow = StockMovement & {
-  books: { title: string } | null;
+  books: { title: string; barcode: string | null } | null;
 };
 
-const ADJUSTMENT_TYPES: StockMovementType[] = [
-  "adjustment",
-  "damage",
-  "return_in",
-  "return_out",
-];
+type LowRow = Pick<
+  Book,
+  | "id"
+  | "title"
+  | "brand"
+  | "barcode"
+  | "stock_qty"
+  | "availability_status"
+>;
 
 export default async function InventoryPage() {
   await requireStaff();
   const supabase = await createClient();
 
-  const [{ data: lowStock }, { data: books }, { data: movements }] =
-    await Promise.all([
-      supabase
-        .from("books")
-        .select("*")
-        .eq("availability_status", "low_stock")
-        .order("stock_qty", { ascending: true }),
-      supabase.from("books").select("id, title").order("title"),
-      supabase
-        .from("stock_movements")
-        .select("*, books(title)")
-        .order("created_at", { ascending: false })
-        .limit(30),
-    ]);
+  const [
+    { data: lowStock },
+    { count: outOfStockCount },
+    { data: movements },
+  ] = await Promise.all([
+    supabase
+      .from("books")
+      .select(
+        "id, title, brand, barcode, stock_qty, availability_status"
+      )
+      .eq("availability_status", "low_stock")
+      .order("stock_qty", { ascending: true })
+      .limit(50),
+    supabase
+      .from("books")
+      .select("*", { count: "exact", head: true })
+      .eq("availability_status", "out_of_stock"),
+    supabase
+      .from("stock_movements")
+      .select("*, books(title, barcode)")
+      .order("created_at", { ascending: false })
+      .limit(40),
+  ]);
 
-  const lowStockBooks = (lowStock ?? []) as Book[];
-  const bookOptions = books ?? [];
+  const lowStockBooks = (lowStock ?? []) as LowRow[];
   const movementRows = (movements ?? []) as MovementRow[];
 
   return (
@@ -65,69 +73,59 @@ export default async function InventoryPage() {
           Inventory
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Stock levels, adjustments, and movement history.
+          Stocktake, journal adjustments, and movement history. Closing stock
+          always moves through the ledger.
         </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Low stock (shown)</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {lowStockBooks.length}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Out of stock</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {outOfStockCount ?? 0}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Recent ledger</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {movementRows.length}
+            </CardTitle>
+          </CardHeader>
+        </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Adjust stock</CardTitle>
+          <CardTitle className="text-base">Stocktake</CardTitle>
           <CardDescription>
-            Record manual adjustments, damage, or returns
+            Physical vs system Closing — commit posts count_adjust movements
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={adjustStock} className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="book_id">Book</Label>
-              <select
-                id="book_id"
-                name="book_id"
-                required
-                className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
-              >
-                <option value="">Select a book…</option>
-                {bookOptions.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="qty_delta">Quantity change</Label>
-              <Input
-                id="qty_delta"
-                name="qty_delta"
-                type="number"
-                required
-                placeholder="e.g. -2 or 5"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="movement_type">Movement type</Label>
-              <select
-                id="movement_type"
-                name="movement_type"
-                required
-                className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
-                defaultValue="adjustment"
-              >
-                {ADJUSTMENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t.replace("_", " ")}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="reason">Reason</Label>
-              <Textarea id="reason" name="reason" required rows={2} />
-            </div>
-            <div className="sm:col-span-2">
-              <Button type="submit">Record movement</Button>
-            </div>
-          </form>
+          <StocktakePanel />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Journal adjust</CardTitle>
+          <CardDescription>
+            Damage, returns, or manual adjustment (search product)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InventoryAdjustForm />
         </CardContent>
       </Card>
 
@@ -135,23 +133,24 @@ export default async function InventoryPage() {
         <CardHeader>
           <CardTitle className="text-base">Low stock</CardTitle>
           <CardDescription>
-            Titles at or below threshold ({lowStockBooks.length})
+            Titles at or below threshold (up to 50)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Threshold</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Brand</TableHead>
+                <TableHead>UPCEAN</TableHead>
+                <TableHead className="text-right">Closing</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {lowStockBooks.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-muted-foreground">
+                  <TableCell colSpan={5} className="text-muted-foreground">
                     No low-stock titles.
                   </TableCell>
                 </TableRow>
@@ -159,8 +158,15 @@ export default async function InventoryPage() {
                 lowStockBooks.map((book) => (
                   <TableRow key={book.id}>
                     <TableCell className="font-medium">{book.title}</TableCell>
-                    <TableCell>{book.stock_qty}</TableCell>
-                    <TableCell>{book.low_stock_threshold ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {book.brand || "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-xs">
+                      {book.barcode || "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {book.stock_qty}
+                    </TableCell>
                     <TableCell>
                       <AvailabilityBadge status={book.availability_status} />
                     </TableCell>
@@ -175,16 +181,16 @@ export default async function InventoryPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Recent movements</CardTitle>
-          <CardDescription>Last 30 ledger entries</CardDescription>
+          <CardDescription>Last 40 ledger entries</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Book</TableHead>
+                <TableHead>Product</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Qty</TableHead>
+                <TableHead className="text-right">Qty</TableHead>
                 <TableHead>Reason</TableHead>
               </TableRow>
             </TableHeader>
@@ -201,20 +207,25 @@ export default async function InventoryPage() {
                     <TableCell className="text-muted-foreground text-xs">
                       {new Date(m.created_at).toLocaleString("en-BT")}
                     </TableCell>
-                    <TableCell>{m.books?.title ?? "—"}</TableCell>
+                    <TableCell>
+                      <div>{m.books?.title ?? "—"}</div>
+                      <div className="text-muted-foreground font-mono text-xs">
+                        {m.books?.barcode || ""}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">
                         {m.movement_type.replace("_", " ")}
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className={
+                      className={`text-right tabular-nums ${
                         m.qty_delta < 0 ? "text-destructive" : "text-primary"
-                      }
+                      }`}
                     >
                       {m.qty_delta > 0 ? `+${m.qty_delta}` : m.qty_delta}
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground text-xs">
+                    <TableCell className="text-muted-foreground max-w-[200px] truncate text-xs">
                       {m.reason ?? "—"}
                     </TableCell>
                   </TableRow>

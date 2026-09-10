@@ -3,6 +3,11 @@ import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
+import {
+  ShelfCategoryTabs,
+  type ShelfBook,
+  type ShelfCategory,
+} from "@/components/storefront/shelf-category-tabs";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { INSTITUTIONAL_SECTIONS } from "@/lib/storefront/institutional";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
@@ -11,14 +16,20 @@ import type { Book } from "@/types/erp";
 export default async function HomePage() {
   const theme = await getStorefrontTheme();
   let featured: Book[] = [];
-  let popular: Book[] = [];
   let spotlight: Book | null = null;
   let settings: { store_name: string; opening_hours: string | null } | null =
     null;
+  let shelfCategories: ShelfCategory[] = [];
+  let shelfBooks: ShelfBook[] = [];
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
-    const [{ data: books, error }, { data: store }] = await Promise.all([
+    const [
+      { data: books, error },
+      { data: store },
+      { data: cats },
+      { data: shelfRows },
+    ] = await Promise.all([
       supabase
         .from("books")
         .select("*")
@@ -31,6 +42,20 @@ export default async function HomePage() {
         .select("store_name, opening_hours")
         .eq("id", 1)
         .maybeSingle(),
+      supabase
+        .from("categories")
+        .select("id, name, slug, sort_order")
+        .order("sort_order")
+        .order("name"),
+      supabase
+        .from("books")
+        .select(
+          "id, title, slug, price_btn, cover_public_id, book_categories(category_id)"
+        )
+        .eq("is_published", true)
+        .eq("product_kind", "book")
+        .order("updated_at", { ascending: false })
+        .limit(48),
     ]);
 
     let list = (books as Book[]) ?? [];
@@ -47,9 +72,92 @@ export default async function HomePage() {
     }
 
     featured = list.slice(0, 4);
-    popular = list.slice(0, 8);
     spotlight = list.find((b) => b.is_featured) ?? list[0] ?? null;
     settings = store;
+
+    const allCats = (cats ?? []) as ShelfCategory[];
+    const recentShelf = (
+      (shelfRows ?? []) as Array<{
+        id: string;
+        title: string;
+        slug: string;
+        price_btn: number;
+        cover_public_id: string | null;
+        book_categories: { category_id: string }[] | null;
+      }>
+    ).map((b) => ({
+      id: b.id,
+      title: b.title,
+      slug: b.slug,
+      price_btn: b.price_btn,
+      cover_public_id: b.cover_public_id,
+      categoryIds: (b.book_categories ?? []).map((c) => c.category_id),
+    }));
+
+    // Pull a few titles per named category so tabs aren't empty
+    const namedCats = allCats.filter((c) => c.slug !== "general-interest");
+    const byCat = await Promise.all(
+      namedCats.map(async (c) => {
+        const { data } = await supabase
+          .from("book_categories")
+          .select(
+            "books(id, title, slug, price_btn, cover_public_id, is_published, product_kind)"
+          )
+          .eq("category_id", c.id)
+          .limit(16);
+        return {
+          catId: c.id,
+          books: ((data ?? []) as Array<{ books: ShelfBook | ShelfBook[] | null }>)
+            .flatMap((row) => {
+              const b = row.books;
+              if (!b) return [];
+              return Array.isArray(b) ? b : [b];
+            })
+            .filter(
+              (b) =>
+                (b as ShelfBook & { is_published?: boolean; product_kind?: string })
+                  .is_published !== false &&
+                (!(b as { product_kind?: string }).product_kind ||
+                  (b as { product_kind?: string }).product_kind === "book")
+            )
+            .slice(0, 8)
+            .map((b) => ({
+              id: b.id,
+              title: b.title,
+              slug: b.slug,
+              price_btn: b.price_btn,
+              cover_public_id: b.cover_public_id,
+              categoryIds: [c.id],
+            })),
+        };
+      })
+    );
+
+    const merged = new Map<string, ShelfBook>();
+    for (const b of recentShelf) merged.set(b.id, b);
+    for (const group of byCat) {
+      for (const b of group.books) {
+        const prev = merged.get(b.id);
+        if (prev) {
+          merged.set(b.id, {
+            ...prev,
+            categoryIds: [...new Set([...prev.categoryIds, ...b.categoryIds])],
+          });
+        } else {
+          merged.set(b.id, b);
+        }
+      }
+    }
+    shelfBooks = [...merged.values()];
+
+    const used = new Set(shelfBooks.flatMap((b) => b.categoryIds));
+    shelfCategories = namedCats.filter(
+      (c) => used.has(c.id) && (byCat.find((g) => g.catId === c.id)?.books.length ?? 0) > 0
+    );
+    const general = allCats.find((c) => c.slug === "general-interest");
+    if (general) {
+      shelfCategories = [...shelfCategories, general];
+    }
   }
 
   const heroTitle = spotlight?.title ?? "From the Chang Lam shelves";
@@ -62,50 +170,55 @@ export default async function HomePage() {
   return (
     <StorefrontShell active="/" theme={theme}>
       {spotlight ? (
-        <section className="sf-textile bg-[color:var(--sf-surface)] pb-8 pt-6 md:pb-20 md:pt-14">
+        <section className="sf-featured-hero sf-textile sf-dzong-top">
           <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6">
-            <p className="sf-eyebrow">Featured title</p>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-5 md:grid-cols-2 md:items-center md:gap-x-16 md:gap-y-0">
+              {/* Copy + CTAs */}
+              <div className="sf-rise min-w-0 self-center">
+                <p className="sf-eyebrow">Featured title</p>
+                <div className="sf-featured-hero__gilt" aria-hidden />
 
-            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-4 md:mt-6 md:grid-cols-2 md:items-center md:gap-14">
-              {/* Left: price + CTAs (mobile); full copy (desktop) */}
-              <div className="sf-rise min-w-0">
-                <h1 className="sf-title mt-1 hidden md:block">{heroTitle}</h1>
-                <p className="mt-4 hidden max-w-md text-sm leading-relaxed text-[color:var(--sf-muted)] md:block md:text-base">
+                <h1 className="sf-featured-hero__title mt-4 hidden md:block">
+                  {heroTitle}
+                </h1>
+                <p className="mt-4 hidden max-w-lg text-[0.95rem] leading-relaxed text-[color:var(--sf-muted)] md:block md:text-base md:leading-7">
                   {heroDescription}
                 </p>
-                <p className="font-heading text-xl text-[color:var(--sf-accent)] md:mt-5 md:text-2xl">
+
+                <p className="sf-featured-hero__price mt-1 md:mt-7">
                   {formatBtn(spotlight.price_btn)}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2 md:mt-6 md:gap-3">
-                  <Link href={`/books/${spotlight.slug}`} className="sf-btn">
+                <div className="mt-4 flex flex-wrap gap-2.5 md:mt-7 md:gap-3">
+                  <Link
+                    href={`/books/${spotlight.slug}`}
+                    className="sf-btn sf-featured-hero__btn"
+                  >
                     View book
                   </Link>
-                  <Link href="/books" className="sf-btn-pine">
+                  <Link href="/books" className="sf-btn-pine sf-featured-hero__btn">
                     All books
                   </Link>
                 </div>
               </div>
 
-              {/* Right: book image */}
-              <div className="sf-rise-delay w-[7.5rem] justify-self-end sm:w-[9.5rem] md:w-full md:max-w-sm md:justify-self-auto">
-                <div className="sf-card relative aspect-[2/3] overflow-hidden p-1.5 md:p-3">
+              {/* Cover — larger presence, no inset card chrome */}
+              <div className="sf-featured-hero__cover justify-self-end md:justify-self-center">
+                <div className="sf-featured-hero__cover-stage">
                   <BookCover
                     publicId={spotlight.cover_public_id}
                     alt={spotlight.title}
-                    width={480}
-                    height={720}
+                    width={640}
+                    height={960}
                     priority
-                    className="h-full w-full rounded-[calc(var(--sf-radius)-0.35rem)] object-cover"
+                    className="h-full w-full object-cover"
                   />
                 </div>
               </div>
 
-              {/* Mobile: title (+ blurb) in one full-width row below */}
+              {/* Mobile title row */}
               <div className="col-span-2 min-w-0 md:hidden">
-                <h1 className="sf-title text-[1.35rem] leading-snug tracking-tight">
-                  {heroTitle}
-                </h1>
-                <p className="mt-2 text-sm leading-relaxed text-[color:var(--sf-muted)]">
+                <h1 className="sf-featured-hero__title">{heroTitle}</h1>
+                <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-[color:var(--sf-muted)]">
                   {heroDescription}
                 </p>
               </div>
@@ -172,29 +285,10 @@ export default async function HomePage() {
             <p className="sf-eyebrow">Popular</p>
             <h2 className="sf-title mt-2">More from the shelf</h2>
           </div>
-          <ul className="mt-8 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
-            {popular.map((book) => (
-              <li key={`pop-${book.id}`}>
-                <Link href={`/books/${book.slug}`} className="group block text-center">
-                  <div className="sf-card mx-auto aspect-[2/3] w-full max-w-[200px] overflow-hidden p-2">
-                    <BookCover
-                      publicId={book.cover_public_id}
-                      alt={book.title}
-                      width={320}
-                      height={480}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <h3 className="mt-3 font-display text-sm group-hover:text-[color:var(--sf-accent)] md:text-lg">
-                    {book.title}
-                  </h3>
-                  <p className="mt-1 text-sm font-semibold text-[color:var(--sf-accent)]">
-                    {formatBtn(book.price_btn)}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <ShelfCategoryTabs
+            categories={shelfCategories}
+            books={shelfBooks}
+          />
         </div>
       </section>
 

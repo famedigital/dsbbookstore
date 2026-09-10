@@ -154,8 +154,10 @@ export function ErpSidebar({ profile }: { profile: Profile }) {
           <p className="text-xs tracking-[0.2em] text-sidebar-primary uppercase">
             DSB Books
           </p>
-          <h1 className="mt-1 font-heading text-xl font-semibold">Office</h1>
-          <p className="mt-2 text-xs text-sidebar-foreground/70">
+          <h1 className="mt-1 font-heading text-xl font-semibold text-[#f7f2e8]">
+            Office
+          </h1>
+          <p className="mt-2 text-xs text-sidebar-foreground/65">
             {profile.full_name ?? profile.email}
             <span className="mt-1 block capitalize opacity-80">
               {profile.role}
@@ -163,6 +165,7 @@ export function ErpSidebar({ profile }: { profile: Profile }) {
           </p>
           <DeskSwitch
             pathname={pathname}
+            tone="dark"
             className="mt-4 w-full justify-stretch [&_a]:flex-1 [&_a]:text-center"
           />
         </div>
