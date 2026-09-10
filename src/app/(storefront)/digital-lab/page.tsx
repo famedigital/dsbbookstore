@@ -44,24 +44,25 @@ export default async function DigitalLabPage() {
     <StorefrontShell active="/digital-lab" theme={theme}>
       <section className="relative isolate min-h-[58vh] overflow-hidden md:min-h-[68vh]">
         <Image
-          src="/images/hero-dsb-magazines.jpg"
-          alt="Print and reading materials at DSB"
+          src="/images/hero-dsb-exterior.jpg"
+          alt="DSB Books on Chang Lam — home of the Digital Knowledge Lab"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_40%]"
+          className="object-cover object-[center_28%]"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(26,36,48,0.94)_0%,rgba(20,17,15,0.65)_50%,rgba(92,36,28,0.35)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(26,36,48,0.94)_0%,rgba(20,17,15,0.72)_48%,rgba(36,53,44,0.55)_100%)]" />
         <div className="relative z-10 mx-auto flex min-h-[58vh] w-full max-w-6xl flex-col justify-end px-4 pb-10 pt-24 md:min-h-[68vh] md:px-6 md:pb-14">
-          <p className="sf-eyebrow text-[color:var(--dsb-gilt)]">
+          <p className="sf-eyebrow text-[color:var(--dsb-gilt,#9c7a3e)]">
             Digital Knowledge Lab
           </p>
-          <h1 className="mt-3 max-w-3xl font-heading text-3xl tracking-[-0.02em] text-[color:var(--dsb-ivory)] md:text-5xl lg:text-6xl">
+          <h1 className="mt-3 max-w-3xl font-heading text-3xl tracking-[-0.02em] text-[color:var(--dsb-ivory,#f7f2e8)] md:text-5xl lg:text-6xl">
             From shelf to screen — Bhutanese knowledge, carefully digitised
           </h1>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-[color:var(--dsb-ivory)]/75 md:text-base">
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-[color:var(--dsb-ivory,#f7f2e8)]/80 md:text-base">
             The Lab extends DSB beyond Chang Lam: heritage scans, e-editions,
-            learning platforms, and archives rooted in Bhutanese content.
+            learning platforms, and archives rooted in Bhutanese content — so
+            schools and partners can teach from screens as well as shelves.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/enquiry" className="sf-btn">
@@ -69,7 +70,8 @@ export default async function DigitalLabPage() {
             </Link>
             <Link
               href="/australia"
-              className="sf-btn-outline !border-[color:var(--dsb-ivory)]/45 !text-[color:var(--dsb-ivory)] hover:!bg-[color:var(--dsb-ivory)] hover:!text-[color:var(--dsb-ink)]"
+              className="inline-flex items-center justify-center border border-[color:var(--dsb-ivory,#f7f2e8)]/55 px-4 py-2.5 text-[0.72rem] font-semibold tracking-[0.08em] text-[color:var(--dsb-ivory,#f7f2e8)] uppercase transition hover:bg-[color:var(--dsb-ivory,#f7f2e8)] hover:text-[color:var(--dsb-ink,#14110f)]"
+              style={{ borderRadius: "var(--sf-btn-radius, 0)" }}
             >
               Australia Bridge
             </Link>

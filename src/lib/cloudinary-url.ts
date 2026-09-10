@@ -28,6 +28,7 @@ export function normalizeIsbn(value?: string | null): string | null {
 /**
  * Free CDN cover by ISBN — no Cloudinary/Supabase storage.
  * Size: S (~small), M (lists), L (detail).
+ * `default=false` makes missing covers 404 (instead of a blank 1×1 placeholder).
  */
 export function openLibraryCoverUrl(
   isbnOrBarcode?: string | null,
@@ -35,7 +36,7 @@ export function openLibraryCoverUrl(
 ): string | null {
   const isbn = normalizeIsbn(isbnOrBarcode);
   if (!isbn) return null;
-  return `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg`;
+  return `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg?default=false`;
 }
 
 /** Prefer stored cover, else Open Library from ISBN/barcode. */

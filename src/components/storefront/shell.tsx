@@ -7,6 +7,7 @@ import {
 } from "@/lib/storefront/institutional";
 import { DsbLogo } from "@/components/brand/dsb-logo";
 import { HeaderSearch } from "@/components/storefront/header-search";
+import { StorefrontMegaNav } from "@/components/storefront/mega-nav";
 
 export function StorefrontHeader({
   active,
@@ -24,27 +25,12 @@ export function StorefrontHeader({
 
         <HeaderSearch
           defaultQuery={searchQuery}
-          className="md:max-w-md lg:max-w-lg"
+          className="min-w-0 flex-1 md:max-w-md lg:max-w-lg"
         />
 
-        <nav
-          className="hidden min-w-0 items-center gap-x-3 overflow-x-auto text-[0.78rem] font-medium tracking-wide text-[color:var(--sf-ink)] [scrollbar-width:none] sm:flex md:gap-x-3.5 lg:gap-x-4 [&::-webkit-scrollbar]:hidden"
-          aria-label="Primary"
-        >
-          {PRIMARY_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`sf-link-gilt shrink-0 whitespace-nowrap py-0.5 ${
-                active === item.href
-                  ? "text-[color:var(--sf-accent)]"
-                  : "text-[color:var(--sf-ink)]/80"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="hidden shrink-0 sm:block" aria-label="Primary">
+          <StorefrontMegaNav active={active} />
+        </div>
       </div>
       <nav
         className="flex min-w-0 items-center gap-x-3.5 overflow-x-auto border-t border-[color:var(--sf-line)]/50 px-3 py-1.5 text-[0.75rem] font-medium sm:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

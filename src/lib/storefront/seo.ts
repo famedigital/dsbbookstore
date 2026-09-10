@@ -128,6 +128,16 @@ export function productJsonLd(book: Book) {
     brand: book.brand
       ? { "@type": "Brand", name: book.brand }
       : { "@type": "Brand", name: "DSB Books" },
+    publisher: book.publisher_name
+      ? { "@type": "Organization", name: book.publisher_name }
+      : undefined,
+    datePublished: book.published_at
+      ? String(book.published_at).slice(0, 10)
+      : undefined,
+    numberOfPages: book.page_count || undefined,
+    author: book.brand
+      ? { "@type": "Person", name: book.brand }
+      : undefined,
     offers: {
       "@type": "Offer",
       url: `${SITE_URL}/books/${book.slug}`,

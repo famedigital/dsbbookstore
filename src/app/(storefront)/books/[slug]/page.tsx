@@ -194,6 +194,16 @@ export default async function BookDetailPage({
             </div>
             <div>
               <dt className="text-[0.65rem] tracking-[0.16em] text-[color:var(--sf-muted)] uppercase">
+                Published
+              </dt>
+              <dd className="mt-1">
+                {book.published_at
+                  ? String(book.published_at).slice(0, 10)
+                  : "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] tracking-[0.16em] text-[color:var(--sf-muted)] uppercase">
                 On hand
               </dt>
               <dd className="mt-1">{book.stock_qty}</dd>
@@ -206,9 +216,12 @@ export default async function BookDetailPage({
             </div>
           </dl>
           {book.description ? (
-            <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--sf-ink)] md:mt-8 md:text-base">
-              {book.description}
-            </p>
+            <div className="mt-5 md:mt-8">
+              <h2 className="font-display text-lg md:text-xl">About this book</h2>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--sf-ink)] md:text-base">
+                {book.description}
+              </p>
+            </div>
           ) : null}
 
           {sent === "1" ? (

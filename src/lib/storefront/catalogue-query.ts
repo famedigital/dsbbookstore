@@ -48,10 +48,13 @@ export type CatalogueBook = Pick<
   | "description"
   | "seo_description"
   | "language"
+  | "publisher_name"
+  | "published_at"
+  | "page_count"
 >;
 
 const SELECT_COLS =
-  "id, title, slug, subtitle, brand, barcode, isbn_13, price_btn, stock_qty, availability_status, cover_public_id, format, description, seo_description, language";
+  "id, title, slug, subtitle, brand, barcode, isbn_13, price_btn, stock_qty, availability_status, cover_public_id, format, description, seo_description, language, publisher_name, published_at, page_count";
 
 export function resolveCatalogueSort(sort?: string): CatalogueSortKey {
   if (sort && sort in CATALOGUE_SORTS) return sort as CatalogueSortKey;

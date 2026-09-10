@@ -146,6 +146,19 @@ export function BookForm({ book, showCost }: BookFormProps) {
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="published_at">Published date</Label>
+            <Input
+              id="published_at"
+              name="published_at"
+              type="date"
+              defaultValue={
+                book?.published_at
+                  ? String(book.published_at).slice(0, 10)
+                  : ""
+              }
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="page_count">Page count</Label>
             <Input
               id="page_count"
@@ -209,7 +222,13 @@ export function BookForm({ book, showCost }: BookFormProps) {
       ) : null}
 
       <div className="space-y-2 sm:col-span-2">
-        <CoverField defaultValue={book?.cover_public_id} />
+        <CoverField
+          bookId={book?.id}
+          bookTitle={book?.title}
+          defaultValue={book?.cover_public_id}
+          isbn={book?.isbn_13}
+          barcode={book?.barcode}
+        />
       </div>
 
       <div className="flex items-center gap-2">

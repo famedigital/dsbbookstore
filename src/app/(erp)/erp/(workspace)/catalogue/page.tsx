@@ -3,6 +3,7 @@ import { requireStaff } from "@/lib/erp/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatBtn } from "@/lib/erp/format";
 import { AvailabilityBadge } from "@/components/erp/availability-badge";
+import { CatalogueCoverCell } from "@/components/erp/catalogue-cover-cell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,11 +34,13 @@ export default async function CataloguePage({
     imported?: string;
     q?: string;
     page?: string;
+    cover?: string;
   }>;
 }) {
   await requireStaff();
-  const { kind, imported, q, page: pageRaw } = await searchParams;
+  const { kind, imported, q, page: pageRaw, cover } = await searchParams;
   const page = Math.max(1, Number(pageRaw) || 1);
+  const noImage = cover === "missing";
   const supabase = await createClient();
 
   const from = (page - 1) * PAGE_SIZE;
@@ -47,7 +50,7 @@ export default async function CataloguePage({
   let query = supabase
     .from("books")
     .select(
-      "id, title, brand, barcode, isbn_13, cost_price_btn, price_btn, opening_qty, stock_qty, clo_val_btn, availability_status, product_kind",
+      "id, title, brand, barcode, isbn_13, cost_price_btn, price_btn, opening_qty, stock_qty, clo_val_btn, availability_status, product_kind, cover_public_id",
       { count: "exact" }
     )
     .order("updated_at", { ascending: false })
@@ -59,6 +62,12 @@ export default async function CataloguePage({
   if (term) {
     query = query.or(
       `title.ilike.%${term}%,brand.ilike.%${term}%,barcode.ilike.%${term}%,isbn_13.ilike.%${term}%`
+    );
+  }
+  if (noImage) {
+    // Null, empty, or SVG placeholder = needs a real photo
+    query = query.or(
+      "cover_public_id.is.null,cover_public_id.eq.,cover_public_id.ilike.%.svg"
     );
   }
 
@@ -85,6 +94,7 @@ export default async function CataloguePage({
     const merged = {
       kind: kind || undefined,
       q: term || undefined,
+      cover: noImage ? "missing" : undefined,
       page: page > 1 ? String(page) : undefined,
       ...extra,
     };
@@ -124,6 +134,7 @@ export default async function CataloguePage({
         className="flex flex-wrap items-center gap-2"
       >
         {kind ? <input type="hidden" name="kind" value={kind} /> : null}
+        {noImage ? <input type="hidden" name="cover" value="missing" /> : null}
         <Input
           name="q"
           defaultValue={term}
@@ -161,7 +172,24 @@ export default async function CataloguePage({
             </Button>
           );
         })}
+        <Button asChild size="sm" variant={noImage ? "default" : "outline"}>
+          <Link
+            href={href({
+              cover: noImage ? undefined : "missing",
+              page: undefined,
+            })}
+          >
+            No image
+          </Link>
+        </Button>
       </div>
+
+      {noImage ? (
+        <p className="text-muted-foreground text-sm">
+          Showing products without a cover photo. Use <strong>Add photo</strong>{" "}
+          to paste a link, upload to Cloudinary, or pick from the library.
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -169,12 +197,14 @@ export default async function CataloguePage({
           <CardDescription>
             Showing {list.length} of {total.toLocaleString("en-BT")} · page{" "}
             {page}/{totalPages}
+            {noImage ? " · no image filter on" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[7.5rem]">Cover</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Brand</TableHead>
                 <TableHead className="text-right">Pur Rate</TableHead>
@@ -190,13 +220,22 @@ export default async function CataloguePage({
             <TableBody>
               {list.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-muted-foreground">
+                  <TableCell colSpan={11} className="text-muted-foreground">
                     No products match. Try another search or clear filters.
                   </TableCell>
                 </TableRow>
               ) : (
                 list.map((book) => (
                   <TableRow key={book.id}>
+                    <TableCell>
+                      <CatalogueCoverCell
+                        bookId={book.id}
+                        title={book.title}
+                        coverPublicId={book.cover_public_id}
+                        isbn={book.isbn_13}
+                        barcode={book.barcode}
+                      />
+                    </TableCell>
                     <TableCell className="max-w-[220px]">
                       <div className="truncate font-medium">{book.title}</div>
                       <Badge variant="outline" className="mt-1 text-[10px]">

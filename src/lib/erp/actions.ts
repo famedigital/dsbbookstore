@@ -25,6 +25,35 @@ async function audit(
   });
 }
 
+/** Quick cover set from catalogue modal (link / Cloudinary upload / library pick). */
+export async function updateBookCover(bookId: string, coverPublicId: string | null) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+  const id = String(bookId || "").trim();
+  if (!id) throw new Error("Missing book id");
+
+  const cover =
+    coverPublicId == null || !String(coverPublicId).trim()
+      ? null
+      : String(coverPublicId).trim();
+
+  const { error } = await supabase
+    .from("books")
+    .update({ cover_public_id: cover, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await audit(userId, "book.cover_update", "book", id, {
+    cover_public_id: cover,
+  });
+
+  revalidatePath("/erp/catalogue");
+  revalidatePath(`/erp/catalogue/${id}`);
+  revalidatePath("/books");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
 export async function upsertBook(formData: FormData) {
   const { userId, profile } = await requireStaff();
   const supabase = await createClient();
@@ -35,6 +64,8 @@ export async function upsertBook(formData: FormData) {
 
   const pageCountRaw = String(formData.get("page_count") || "").trim();
   const page_count = pageCountRaw ? Number(pageCountRaw) : null;
+  const publishedRaw = String(formData.get("published_at") || "").trim();
+  const published_at = publishedRaw || null;
   const kindRaw = String(formData.get("product_kind") || "book");
   const product_kind = ["book", "stationery", "other"].includes(kindRaw)
     ? kindRaw
@@ -55,6 +86,7 @@ export async function upsertBook(formData: FormData) {
     language: String(formData.get("language") || "English"),
     format: String(formData.get("format") || "paperback"),
     publisher_name: String(formData.get("publisher_name") || "DSB Publication"),
+    published_at,
     page_count,
     price_btn: Number(formData.get("price_btn") || 0),
     cost_price_btn:
@@ -1057,11 +1089,16 @@ export async function submitPublicEnquiry(formData: FormData) {
   const supabase = await createClient();
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim();
-  const message = String(formData.get("message") || "").trim();
+  let message = String(formData.get("message") || "").trim();
   const bookId = String(formData.get("book_id") || "") || null;
+  const bookTitle = String(formData.get("book_title") || "").trim();
 
   if (!name || !email || !message) {
     throw new Error("Name, email, and message are required");
+  }
+
+  if (bookTitle && !message.toLowerCase().includes(bookTitle.toLowerCase())) {
+    message = `Re: ${bookTitle}\n\n${message}`;
   }
 
   const { error } = await supabase.from("enquiries").insert({

@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { BookCover } from "@/components/media/book-cover";
-import { formatBtn, availabilityLabel } from "@/lib/erp/format";
+import { CatalogueBookCard } from "@/components/storefront/catalogue-book-card";
 import type { CatalogueBook } from "@/lib/storefront/catalogue-query";
 
 type Props = {
@@ -157,63 +156,9 @@ export function CatalogueResults({
         </div>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {books.map((book) => {
-            const canBuy =
-              book.availability_status === "in_stock" ||
-              book.availability_status === "low_stock";
-            return (
-              <li
-                key={book.id}
-                className="group flex min-w-0 flex-col overflow-hidden"
-              >
-                <Link
-                  href={`/books/${book.slug}`}
-                  className="flex min-w-0 flex-1 flex-col text-left text-[color:var(--sf-ink)] no-underline"
-                >
-                  <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-[color:var(--sf-surface)]">
-                    <BookCover
-                      publicId={book.cover_public_id}
-                      isbn={book.isbn_13}
-                      barcode={book.barcode}
-                      alt={book.title}
-                      width={220}
-                      height={330}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                      sizes="(max-width:640px) 45vw, (max-width:1024px) 18vw, 140px"
-                    />
-                  </div>
-                  <h2 className="mt-2.5 line-clamp-2 min-h-[2.5rem] text-sm leading-snug font-semibold group-hover:text-[color:var(--sf-accent)]">
-                    {book.title}
-                  </h2>
-                  <p className="mt-0.5 line-clamp-1 min-h-[1rem] text-xs capitalize text-[color:var(--sf-muted)]">
-                    {book.brand || "\u00a0"}
-                  </p>
-                </Link>
-
-                <div className="mt-auto flex min-w-0 flex-col pt-2">
-                  <p className="text-sm font-semibold tracking-tight tabular-nums">
-                    {formatBtn(book.price_btn)}
-                  </p>
-                  <p className="mt-0.5 line-clamp-1 text-[0.7rem] text-[color:var(--sf-muted)]">
-                    {availabilityLabel(book.availability_status)}
-                    {typeof book.stock_qty === "number" && canBuy
-                      ? ` · ${book.stock_qty}`
-                      : ""}
-                  </p>
-                  <Link
-                    href={`/books/${book.slug}`}
-                    className={
-                      canBuy
-                        ? "sf-btn mt-2.5 flex w-full items-center justify-center !rounded-full !px-2 !py-1.5 text-[0.7rem]"
-                        : "sf-btn-outline mt-2.5 flex w-full items-center justify-center !rounded-full !px-2 !py-1.5 text-[0.7rem]"
-                    }
-                  >
-                    {canBuy ? "View & buy" : "Enquire"}
-                  </Link>
-                </div>
-              </li>
-            );
-          })}
+          {books.map((book) => (
+            <CatalogueBookCard key={book.id} book={book} />
+          ))}
         </ul>
       )}
 

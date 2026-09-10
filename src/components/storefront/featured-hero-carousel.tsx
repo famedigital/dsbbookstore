@@ -16,6 +16,9 @@ export type HeroSlide = {
   cover_public_id: string | null;
   isbn_13: string | null;
   barcode: string | null;
+  publisher_name: string | null;
+  published_at: string | null;
+  brand: string | null;
   categoryName: string;
   categorySlug: string;
 };
@@ -37,11 +40,28 @@ export function FeaturedHeroCarousel({ slides }: { slides: HeroSlide[] }) {
   if (slides.length === 0) return null;
 
   const slide = slides[index] ?? slides[0];
+  const year = slide.published_at?.slice(0, 4);
+  const yearOk = year && /^\d{4}$/.test(year) ? year : null;
+  const metaLine = [
+    slide.brand,
+    slide.publisher_name &&
+    slide.publisher_name !== "DSB Publication" &&
+    slide.publisher_name !== "DSB Enterprises"
+      ? slide.publisher_name
+      : null,
+    yearOk,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const blurb =
     (slide.subtitle ||
-      slide.description?.slice(0, 140) ||
+      slide.description?.slice(0, 160) ||
       "Live stock from Bhutan's bookstore on Chang Lam.") +
-    (slide.description && slide.description.length > 140 ? "…" : "");
+    (slide.description &&
+    !slide.subtitle &&
+    slide.description.length > 160
+      ? "…"
+      : "");
 
   return (
     <section
@@ -76,6 +96,11 @@ export function FeaturedHeroCarousel({ slides }: { slides: HeroSlide[] }) {
               <h1 className="sf-featured-hero__title mt-3 hidden md:block">
                 {slide.title}
               </h1>
+              {metaLine ? (
+                <p className="mt-2 hidden text-sm text-[color:var(--sf-muted)] md:block">
+                  {metaLine}
+                </p>
+              ) : null}
               <p className="mt-3 hidden max-w-lg text-[0.9rem] leading-relaxed text-[color:var(--sf-muted)] md:line-clamp-3 md:block md:text-base">
                 {blurb}
               </p>
@@ -145,6 +170,11 @@ export function FeaturedHeroCarousel({ slides }: { slides: HeroSlide[] }) {
             className="col-span-2 min-w-0 md:hidden"
           >
             <h1 className="sf-featured-hero__title">{slide.title}</h1>
+            {metaLine ? (
+              <p className="mt-1 text-xs text-[color:var(--sf-muted)]">
+                {metaLine}
+              </p>
+            ) : null}
             <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-[color:var(--sf-muted)]">
               {blurb}
             </p>

@@ -107,7 +107,7 @@ export default async function HomePage() {
         const { data } = await supabase
           .from("book_categories")
           .select(
-            "books(id, title, slug, subtitle, description, price_btn, cover_public_id, isbn_13, barcode, is_published, product_kind)"
+            "books(id, title, slug, subtitle, description, price_btn, cover_public_id, isbn_13, barcode, brand, publisher_name, published_at, is_published, product_kind)"
           )
           .eq("category_id", c.id)
           .limit(16);
@@ -121,6 +121,9 @@ export default async function HomePage() {
           cover_public_id: string | null;
           isbn_13?: string | null;
           barcode?: string | null;
+          brand?: string | null;
+          publisher_name?: string | null;
+          published_at?: string | null;
           is_published?: boolean;
           product_kind?: string;
         };
@@ -163,6 +166,9 @@ export default async function HomePage() {
                 cover_public_id: booksInCat[0].cover_public_id,
                 isbn_13: booksInCat[0].isbn_13 ?? null,
                 barcode: booksInCat[0].barcode ?? null,
+                brand: booksInCat[0].brand ?? null,
+                publisher_name: booksInCat[0].publisher_name ?? null,
+                published_at: booksInCat[0].published_at ?? null,
                 categoryName: c.name,
                 categorySlug: c.slug,
               } satisfies HeroSlide)
@@ -222,6 +228,9 @@ export default async function HomePage() {
           cover_public_id: b.cover_public_id,
           isbn_13: b.isbn_13,
           barcode: b.barcode,
+          brand: b.brand,
+          publisher_name: b.publisher_name,
+          published_at: b.published_at,
           categoryName: "Featured",
           categorySlug: "",
         },
@@ -349,43 +358,90 @@ export default async function HomePage() {
         <hr className="sf-dzong-rule mx-auto mt-10 max-w-6xl" />
       </section>
 
-      <section className="sf-pine-band sf-textile py-8 md:py-16">
-        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 md:grid-cols-2 md:items-center md:gap-12 md:px-6">
-          <div>
-            <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-gilt)] uppercase">
+      <section className="relative isolate overflow-hidden bg-[color:var(--sf-pine,#24352c)] py-10 text-[color:var(--sf-ivory,#f7f2e8)] md:py-16">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.14]"
+          aria-hidden
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse at 20% 0%, rgba(156,122,62,0.45), transparent 50%), radial-gradient(ellipse at 100% 100%, rgba(247,242,232,0.12), transparent 45%)",
+          }}
+        />
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-8 px-4 md:grid-cols-12 md:items-center md:gap-10 md:px-6">
+          <div className="md:col-span-6 lg:col-span-5">
+            <p className="text-[0.65rem] font-semibold tracking-[0.22em] text-[color:var(--sf-gilt,#9c7a3e)] uppercase">
               Beyond Thimphu
             </p>
-            <h2 className="mt-3 font-heading text-3xl tracking-tight md:text-4xl">
-              Australia Bridge &amp; Digital Lab
+            <h2 className="mt-3 font-heading text-3xl tracking-tight text-[color:var(--sf-ivory,#f7f2e8)] md:text-4xl">
+              How DSB reaches Australia — and the screen
             </h2>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70 md:text-base">
-              Partnerships for publishing, education, and digitisation —
-              connecting Bhutanese books with Australian institutions and
-              digital learning.
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-[color:var(--sf-ivory,#f7f2e8)]/80 md:text-base">
+              The Chang Lam shop is only the start. Two programmes carry Bhutanese
+              books and knowledge outward: one for partners in Australia, one for
+              digitisation and learning platforms.
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+
+            <ul className="mt-6 space-y-4">
+              <li className="border-l-2 border-[color:var(--sf-gilt,#9c7a3e)] pl-4">
+                <p className="text-[0.65rem] font-semibold tracking-[0.16em] text-[color:var(--sf-gilt,#9c7a3e)] uppercase">
+                  Australia Bridge
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-[color:var(--sf-ivory,#f7f2e8)]/75">
+                  Legal trade, print-on-demand, and school or library supply so
+                  Bhutanese titles can reach Australian classrooms and collections
+                  without long freight waits from Thimphu alone.
+                </p>
+              </li>
+              <li className="border-l-2 border-[color:var(--sf-gilt,#9c7a3e)]/55 pl-4">
+                <p className="text-[0.65rem] font-semibold tracking-[0.16em] text-[color:var(--sf-gilt,#9c7a3e)] uppercase">
+                  Digital Knowledge Lab
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-[color:var(--sf-ivory,#f7f2e8)]/75">
+                  Scan, catalogue, and package Bhutanese content as e-books,
+                  audio, archives, and LMS-ready courses — for institutions that
+                  need screens as well as shelves.
+                </p>
+              </li>
+            </ul>
+
+            <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 href="/australia"
-                className="sf-btn !bg-[color:var(--sf-gilt)] !text-[color:var(--sf-ink)] hover:!bg-[color:var(--dsb-ivory)]"
+                className="sf-btn !bg-[color:var(--sf-gilt,#9c7a3e)] !text-[color:var(--sf-ink,#14110f)] hover:!bg-[color:var(--sf-ivory,#f7f2e8)]"
               >
-                Australia
+                Australia Bridge
               </Link>
               <Link
                 href="/digital-lab"
-                className="sf-btn-outline !border-white/40 !text-white hover:!bg-white hover:!text-[color:var(--sf-pine)]"
+                className="inline-flex items-center justify-center border border-[color:var(--sf-ivory,#f7f2e8)]/55 bg-transparent px-4 py-2.5 text-[0.72rem] font-semibold tracking-[0.08em] text-[color:var(--sf-ivory,#f7f2e8)] uppercase transition hover:bg-[color:var(--sf-ivory,#f7f2e8)] hover:text-[color:var(--sf-pine,#24352c)]"
+                style={{ borderRadius: "var(--sf-btn-radius, 0)" }}
               >
                 Digital Lab
               </Link>
             </div>
           </div>
-          <div className="relative aspect-[4/3] overflow-hidden border border-white/10">
-            <Image
-              src="/images/hero-dsb-magazines.jpg"
-              alt="Periodicals and titles at DSB Books"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+
+          <div className="md:col-span-6 lg:col-span-7">
+            <div className="relative aspect-[5/4] overflow-hidden border border-white/15 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.55)] md:aspect-[4/3]">
+              <Image
+                src="/images/hero-dsb-exterior.jpg"
+                alt="DSB Books storefront on Chang Lam — starting point for Australia Bridge and Digital Lab"
+                fill
+                className="object-cover object-[center_28%]"
+                sizes="(max-width: 768px) 100vw, 55vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--sf-pine,#24352c)]/85 via-transparent to-black/20" />
+              <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
+                <p className="text-[0.65rem] font-semibold tracking-[0.18em] text-[color:var(--sf-gilt,#9c7a3e)] uppercase">
+                  From this doorway
+                </p>
+                <p className="mt-1 max-w-sm text-sm leading-snug text-[color:var(--sf-ivory,#f7f2e8)]/90">
+                  Jojo&apos;s Shopping Complex, Chang Lam — the same shop that
+                  stocks the shelves now partners abroad and builds digital
+                  editions.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>

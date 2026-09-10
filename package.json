@@ -10,6 +10,7 @@
     "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'",
     "db:seed": "node scripts/seed-sample-books.mjs && node scripts/seed-dsb-publication-titles.mjs",
     "covers:link": "node scripts/link-openlibrary-covers.mjs",
+    "books:enrich": "node scripts/enrich-book-metadata.mjs",
     "media:sync": "node scripts/sync-site-media-cloudinary.mjs --delete-samples"
   },
   "dependencies": {
@@ -45,6 +46,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
+    "postgres": "^3.4.9",
     "supabase": "^2.109.1",
     "tailwindcss": "^4",
     "typescript": "^5"

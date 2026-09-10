@@ -17,7 +17,7 @@ export default async function CounterPage() {
   const supabase = await createClient();
   const todayIso = startOfTodayIso();
 
-  // Free-tier: do NOT load 6k SKUs — CounterTill typeaheads via searchProducts.
+  // Free-tier: CounterTill seeds IndexedDB on first open, then searches locally.
   const [{ data: recentOrders }, { data: store }] = await Promise.all([
     supabase
       .from("orders")

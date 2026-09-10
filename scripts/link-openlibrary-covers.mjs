@@ -86,7 +86,7 @@ let errors = 0;
 for (let i = 0; i < queue.length; i++) {
   const book = queue[i];
   const isbn = normalizeIsbn(book.isbn_13) || normalizeIsbn(book.barcode);
-  const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`;
+  const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`;
 
   try {
     // Open Library HEAD omits content-length — must GET and check body size.

@@ -1,9 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { History, Minus, Plus, Search, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { History, Minus, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { createPosSale } from "@/lib/erp/actions";
-import { searchProducts } from "@/lib/erp/product-search";
+import {
+  getCounterCatalogStamp,
+  pullCounterCatalog,
+} from "@/lib/erp/counter-catalog-pull";
+import {
+  buildCounterBarcodeIndex,
+  filterCounterCatalog,
+  readCounterCatalog,
+  readCounterCatalogMeta,
+  writeCounterCatalog,
+  type CounterCatalogItem,
+} from "@/lib/erp/counter-local-catalog";
 import { formatBtn } from "@/lib/erp/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,18 +53,20 @@ type CartLine = {
   stockQty: number;
 };
 
-function hitToPos(hit: Awaited<ReturnType<typeof searchProducts>>[number]): PosItem {
+const STALE_MS = 30 * 60 * 1000;
+
+function catalogToPos(item: CounterCatalogItem): PosItem {
   return {
-    id: hit.id,
-    title: hit.title,
-    price_btn: hit.price_btn,
-    cost_price_btn: hit.cost_price_btn,
-    stock_qty: hit.stock_qty,
-    availability_status: hit.stock_qty > 0 ? "in_stock" : "out_of_stock",
+    id: item.id,
+    title: item.title,
+    price_btn: item.price_btn,
+    cost_price_btn: item.cost_price_btn,
+    stock_qty: item.stock_qty,
+    availability_status: item.stock_qty > 0 ? "in_stock" : "out_of_stock",
     format: null,
-    isbn_13: hit.isbn_13,
-    barcode: hit.barcode,
-    product_kind: (hit.product_kind as Book["product_kind"]) || "book",
+    isbn_13: item.isbn_13,
+    barcode: item.barcode,
+    product_kind: (item.product_kind as Book["product_kind"]) || "book",
   };
 }
 
@@ -68,20 +81,22 @@ export function CounterTill({
   shopName?: string;
   bankQrImageUrl?: string | null;
 }) {
+  const [catalog, setCatalog] = useState<CounterCatalogItem[]>([]);
+  const [catalogSyncing, setCatalogSyncing] = useState(false);
+  const [catalogReady, setCatalogReady] = useState(false);
+
   const [cart, setCart] = useState<CartLine[]>([]);
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
   const [successOrder, setSuccessOrder] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState(
-    "Empty ticket · Alt+L items · Alt+S tender · PgUp recent"
+    "Loading local SKUs… · Alt+L items · Alt+S tender"
   );
 
   const [picker, setPicker] = useState(false);
   const [pickQ, setPickQ] = useState("");
   const [pickAt, setPickAt] = useState(0);
-  const [pickHits, setPickHits] = useState<PosItem[]>([]);
-  const [pickLoading, setPickLoading] = useState(false);
   const pickRef = useRef<HTMLInputElement>(null);
   const scanRef = useRef<HTMLInputElement>(null);
   const [scan, setScan] = useState("");
@@ -95,49 +110,116 @@ export function CounterTill({
   );
   const [printSale, setPrintSale] = useState<CounterRecentSale | null>(null);
 
-  // Typeahead — free-tier safe (no full catalogue download)
-  useEffect(() => {
-    if (!picker) return;
-    const q = pickQ.trim();
-    if (q.length < 1) {
-      setPickHits([]);
-      return;
-    }
-    let cancelled = false;
-    setPickLoading(true);
-    const t = window.setTimeout(() => {
-      void searchProducts(q)
-        .then((rows) => {
-          if (cancelled) return;
-          setPickHits(
-            rows
-              .filter((r) => r.stock_qty > 0)
-              .slice(0, 40)
-              .map(hitToPos)
-          );
-          setPickAt(0);
-        })
-        .catch(() => {
-          if (!cancelled) setPickHits([]);
-        })
-        .finally(() => {
-          if (!cancelled) setPickLoading(false);
-        });
-    }, 180);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [pickQ, picker]);
+  const barcodeIndex = useMemo(
+    () => buildCounterBarcodeIndex(catalog),
+    [catalog]
+  );
 
-  const filteredItems = pickHits;
+  const filteredItems = useMemo(() => {
+    return filterCounterCatalog(catalog, pickQ, {
+      inStockOnly: true,
+      limit: 80,
+    }).map(catalogToPos);
+  }, [catalog, pickQ]);
+
   const subtotal = cart.reduce((sum, line) => sum + line.qty * line.unitPrice, 0);
   const qtyCount = cart.reduce((sum, line) => sum + line.qty, 0);
+
+  async function syncCatalog(force = false) {
+    setCatalogSyncing(true);
+    try {
+      if (!force) {
+        const meta = await readCounterCatalogMeta();
+        if (meta && Date.now() - meta.pulledAt < STALE_MS) {
+          try {
+            const stamp = await getCounterCatalogStamp();
+            if (
+              stamp.count === meta.count &&
+              stamp.maxUpdatedAt === meta.maxUpdatedAt
+            ) {
+              setStatus(
+                `Ready · ${meta.count.toLocaleString("en-BT")} SKUs on device`
+              );
+              return;
+            }
+          } catch {
+            setStatus(
+              `Offline · ${meta.count.toLocaleString("en-BT")} SKUs on device`
+            );
+            return;
+          }
+        }
+      }
+
+      setStatus("Syncing SKUs from server…");
+      const pull = await pullCounterCatalog();
+      await writeCounterCatalog(
+        {
+          pulledAt: pull.pulledAt,
+          count: pull.count,
+          maxUpdatedAt: pull.maxUpdatedAt,
+        },
+        pull.items
+      );
+      setCatalog(pull.items);
+      setStatus(
+        `Ready · ${pull.count.toLocaleString("en-BT")} SKUs on device`
+      );
+    } catch (e) {
+      const cached = await readCounterCatalog();
+      if (cached.length) {
+        setCatalog(cached);
+        setStatus(
+          `Offline · ${cached.length.toLocaleString("en-BT")} SKUs on device`
+        );
+      } else {
+        setStatus(
+          e instanceof Error
+            ? `SKU sync failed · ${e.message}`
+            : "SKU sync failed"
+        );
+      }
+    } finally {
+      setCatalogSyncing(false);
+      setCatalogReady(true);
+    }
+  }
+
+  // Boot: paint from IndexedDB instantly, then sync (same idea as POS).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const cached = await readCounterCatalog();
+      if (cancelled) return;
+      if (cached.length) {
+        setCatalog(cached);
+        setCatalogReady(true);
+        setStatus(
+          `Ready · ${cached.length.toLocaleString("en-BT")} SKUs — syncing…`
+        );
+      }
+      await syncCatalog(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- boot once
+  }, []);
+
+  useEffect(() => {
+    function onVis() {
+      if (document.visibilityState === "visible") {
+        void syncCatalog(false);
+      }
+    }
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openPicker() {
     setTenderOpen(false);
     setPickQ("");
-    setPickHits([]);
     setPickAt(0);
     setPicker(true);
     window.setTimeout(() => pickRef.current?.focus(), 0);
@@ -228,7 +310,11 @@ export function CounterTill({
     setSelected(0);
     setSuccessOrder(null);
     setError(null);
-    setStatus("Empty ticket · Alt+L items · Alt+S tender · PgUp recent");
+    setStatus(
+      catalog.length
+        ? `Empty ticket · ${catalog.length.toLocaleString("en-BT")} SKUs · Alt+L`
+        : "Empty ticket · Alt+L items · Alt+S tender · PgUp recent"
+    );
   }
 
   function openRecent() {
@@ -255,31 +341,39 @@ export function CounterTill({
   async function tryScan(code: string) {
     const raw = code.trim();
     if (!raw) return;
-    setStatus("Looking up…");
-    try {
-      const rows = await searchProducts(raw);
-      const inStock = rows.filter((r) => r.stock_qty > 0).map(hitToPos);
-      const exact =
-        inStock.find(
-          (i) =>
-            (i.isbn_13 ?? "").toLowerCase() === raw.toLowerCase() ||
-            (i.barcode ?? "").toLowerCase() === raw.toLowerCase()
-        ) || (inStock.length === 1 ? inStock[0] : null);
-      if (exact) {
-        addItem(exact);
-        setScan("");
-        return;
-      }
+    const key = raw.toLowerCase();
+
+    const exactLocal = barcodeIndex.get(key);
+    if (exactLocal && exactLocal.stock_qty > 0) {
+      addItem(catalogToPos(exactLocal));
+      setScan("");
+      return;
+    }
+
+    const localHits = filterCounterCatalog(catalog, raw, {
+      inStockOnly: true,
+      limit: 40,
+    }).map(catalogToPos);
+    if (localHits.length === 1) {
+      addItem(localHits[0]);
+      setScan("");
+      return;
+    }
+    if (localHits.length > 1) {
       setPickQ(raw);
-      setPickHits(inStock.slice(0, 40));
       setPickAt(0);
       setPicker(true);
       setScan("");
       window.setTimeout(() => pickRef.current?.focus(), 0);
-    } catch {
-      setStatus("Lookup failed");
-      setScan("");
+      return;
     }
+
+    setStatus(
+      catalogReady
+        ? "Not in local catalogue — try Sync SKUs"
+        : "Catalogue still loading…"
+    );
+    setScan("");
   }
 
   async function checkout(pay: TenderResult) {
@@ -333,6 +427,7 @@ export function CounterTill({
       if (pay.print) {
         reprintSale(sale);
       }
+      void syncCatalog(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {
@@ -344,24 +439,14 @@ export function CounterTill({
     function onKeyDown(e: KeyboardEvent) {
       if (recentOpen || tenderOpen) return;
 
-      // Capture Alt+L for items picker only — never let it bubble to ERP chrome.
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === "KeyL") {
         e.preventDefault();
         e.stopPropagation();
-        setPicker((open) => {
-          if (open) {
-            window.setTimeout(() => scanRef.current?.focus(), 0);
-            return false;
-          }
-          setPickQ("");
-          setPickAt(0);
-          window.setTimeout(() => pickRef.current?.focus(), 0);
-          return true;
-        });
+        if (picker) closePicker();
+        else openPicker();
         return;
       }
 
-      // Alt+S opens tender (same as Charge).
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === "KeyS") {
         e.preventDefault();
         e.stopPropagation();
@@ -446,7 +531,6 @@ export function CounterTill({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-[#f4f0e8]">
-      {/* Scan / find bar */}
       <div className="flex shrink-0 items-center gap-2 border-b border-[#d6cdb8] bg-[#faf6ef] px-3 py-2">
         <Search className="size-4 shrink-0 text-[#6a6358]" />
         <Input
@@ -498,7 +582,6 @@ export function CounterTill({
         </Button>
       </div>
 
-      {/* Ticket grid */}
       <div className="min-h-0 flex-1 overflow-auto">
         {successOrder ? (
           <div className="mx-3 mt-3 rounded-md border border-[#5c241c]/30 bg-[#5c241c]/5 px-3 py-2 text-sm">
@@ -538,6 +621,13 @@ export function CounterTill({
                       Alt+S
                     </kbd>{" "}
                     to tender.
+                  </p>
+                  <p className="mt-3 text-xs text-[#6a6358]">
+                    {catalogSyncing
+                      ? "Syncing SKUs to this device…"
+                      : catalog.length
+                        ? `${catalog.length.toLocaleString("en-BT")} SKUs cached locally`
+                        : "First open loads the full catalogue to this device"}
                   </p>
                 </td>
               </tr>
@@ -618,7 +708,6 @@ export function CounterTill({
         {cart.length ? ` · ${cart.length} lines · ${qtyCount} qty` : ""}
       </p>
 
-      {/* Fixed charge footer — mop lives in tender modal */}
       <footer className="shrink-0 border-t border-[#d6cdb8] bg-[#14110f] px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-[#f7f2e8]">
         <div className="mb-2 flex items-end justify-between gap-3">
           <div>
@@ -653,7 +742,6 @@ export function CounterTill({
         </div>
       </footer>
 
-      {/* Alt+L items list (POS-style picker) */}
       {picker ? (
         <div
           role="dialog"
@@ -669,7 +757,9 @@ export function CounterTill({
               <div>
                 <p className="font-heading text-xl tracking-tight">Items</p>
                 <p className="text-[0.65rem] tracking-wide text-white/45 uppercase">
-                  Books · stationery · other stock
+                  {catalog.length
+                    ? `${catalog.length.toLocaleString("en-BT")} on device`
+                    : "Loading catalogue…"}
                 </p>
               </div>
               <button
@@ -686,7 +776,7 @@ export function CounterTill({
                 ref={pickRef}
                 autoFocus
                 aria-label="Find item"
-                placeholder="Name or code"
+                placeholder="Name, brand, or barcode — local search"
                 value={pickQ}
                 onChange={(e) => {
                   setPickQ(e.target.value);
@@ -726,19 +816,37 @@ export function CounterTill({
               ))}
               {filteredItems.length === 0 ? (
                 <li className="px-4 py-8 text-center text-sm text-[#6a6358]">
-                  {pickLoading
-                    ? "Searching…"
-                    : pickQ.trim()
-                      ? "No in-stock items match"
-                      : "Type a title, brand, or barcode"}
+                  {catalogSyncing
+                    ? "Loading SKUs onto this device…"
+                    : !catalog.length
+                      ? "No local catalogue yet — tap Sync SKUs"
+                      : pickQ.trim()
+                        ? "No in-stock items match"
+                        : "No in-stock items in local catalogue"}
                 </li>
               ) : null}
             </ul>
-            <div className="flex items-center justify-between border-t border-[#d6cdb8] px-4 py-2 text-xs text-[#6a6358]">
-              <span>↑↓ select · Enter add · Esc close</span>
-              <Link href="/erp" className="font-medium text-[#5c241c] hover:underline">
-                Office →
-              </Link>
+            <div className="flex items-center justify-between gap-2 border-t border-[#d6cdb8] px-4 py-2 text-xs text-[#6a6358]">
+              <span>↑↓ · Enter · Esc</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium text-[#5c241c] hover:underline disabled:opacity-50"
+                  disabled={catalogSyncing}
+                  onClick={() => void syncCatalog(true)}
+                >
+                  <RefreshCw
+                    className={cn("size-3.5", catalogSyncing && "animate-spin")}
+                  />
+                  Sync SKUs
+                </button>
+                <Link
+                  href="/erp"
+                  className="font-medium text-[#5c241c] hover:underline"
+                >
+                  Office →
+                </Link>
+              </div>
             </div>
           </div>
         </div>
