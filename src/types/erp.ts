@@ -68,6 +68,8 @@ export type PublishingStage =
   | "published"
   | "archived";
 
+export type ProductKind = "book" | "stationery" | "other";
+
 export type Profile = {
   id: string;
   full_name: string | null;
@@ -87,6 +89,9 @@ export type Book = {
   description: string | null;
   isbn_13: string | null;
   isbn_10: string | null;
+  barcode: string | null;
+  sku_code: string | null;
+  product_kind: ProductKind;
   language: string | null;
   format: string | null;
   page_count: number | null;
@@ -108,6 +113,9 @@ export type Book = {
   created_at: string;
   updated_at: string;
 };
+
+/** Alias — catalogue SKUs include books, stationery, and other products. */
+export type CatalogProduct = Book;
 
 export type Author = {
   id: string;
@@ -277,6 +285,14 @@ export type StoreSettings = {
   tax_rate: number;
   /** Figma storefront preset: uikit | booksaw | booketic | atelier */
   storefront_theme?: string | null;
+  public_tagline?: string | null;
+  visit_directions?: string | null;
+  website_url?: string | null;
+  receipt_header_note?: string | null;
+  receipt_thanks?: string | null;
+  receipt_paper_mm?: number | null;
+  print_mode?: "usb" | "none" | string | null;
+  bank_qr_image_url?: string | null;
   updated_at: string;
 };
 

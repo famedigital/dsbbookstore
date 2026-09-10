@@ -38,7 +38,7 @@ export default async function PurchasingPage() {
   const [{ data: suppliers }, { data: books }, { data: purchaseOrders }] =
     await Promise.all([
       supabase.from("suppliers").select("*").order("name"),
-      supabase.from("books").select("id, title").order("title"),
+      supabase.from("books").select("id, title, product_kind").order("title"),
       supabase
         .from("purchase_orders")
         .select("*, suppliers(name)")
@@ -56,7 +56,7 @@ export default async function PurchasingPage() {
           Purchasing
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Suppliers, purchase orders, and goods receipt.
+          Suppliers, purchase bills, and goods receipt into product stock.
         </p>
       </div>
 
@@ -93,8 +93,10 @@ export default async function PurchasingPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Create purchase order</CardTitle>
-            <CardDescription>Order stock from a supplier</CardDescription>
+            <CardTitle className="text-base">Add bill</CardTitle>
+            <CardDescription>
+              Purchase order / supplier bill — receive into any product
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form action={createPurchaseOrder} className="space-y-4">
@@ -114,17 +116,20 @@ export default async function PurchasingPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="book_id">Book</Label>
+                <Label htmlFor="book_id">Product</Label>
                 <select
                   id="book_id"
                   name="book_id"
                   required
                   className="border-input bg-background h-9 w-full rounded-lg border px-3 text-sm"
                 >
-                  <option value="">Select a book…</option>
+                  <option value="">Select a product…</option>
                   {bookOptions.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.title}
+                      {"product_kind" in b && b.product_kind
+                        ? ` · ${String(b.product_kind)}`
+                        : ""}
                     </option>
                   ))}
                 </select>
@@ -155,7 +160,7 @@ export default async function PurchasingPage() {
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea id="notes" name="notes" rows={2} />
               </div>
-              <Button type="submit">Create PO</Button>
+              <Button type="submit">Create bill</Button>
             </form>
           </CardContent>
         </Card>
@@ -212,8 +217,8 @@ export default async function PurchasingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Purchase orders</CardTitle>
-          <CardDescription>{poList.length} PO(s)</CardDescription>
+          <CardTitle className="text-base">Purchase bills</CardTitle>
+          <CardDescription>{poList.length} bill(s)</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

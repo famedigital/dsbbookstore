@@ -25,16 +25,16 @@ export const STOREFRONT_THEMES = [
   },
   {
     id: "atelier",
-    name: "Atelier Lacquer",
+    name: "Chang Lam atelier",
     description:
-      "Editorial luxury — ink, ivory, lacquer red and gilt (previous DSB atelier look).",
+      "Bhutanese-inspired lacquer, pine, gilt, paper grain and subtle textile — DSB’s house look.",
     figma: null,
   },
 ] as const;
 
 export type StorefrontThemeId = (typeof STOREFRONT_THEMES)[number]["id"];
 
-export const DEFAULT_STOREFRONT_THEME: StorefrontThemeId = "uikit";
+export const DEFAULT_STOREFRONT_THEME: StorefrontThemeId = "atelier";
 
 export function isStorefrontThemeId(value: string): value is StorefrontThemeId {
   return STOREFRONT_THEMES.some((t) => t.id === value);

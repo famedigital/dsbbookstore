@@ -16,10 +16,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Book, PaymentMethod } from "@/types/erp";
+import { cn } from "@/lib/utils";
 
-type PosBook = Pick<
+type PosItem = Pick<
   Book,
-  "id" | "title" | "price_btn" | "cost_price_btn" | "stock_qty" | "availability_status"
+  | "id"
+  | "title"
+  | "price_btn"
+  | "cost_price_btn"
+  | "stock_qty"
+  | "availability_status"
+  | "format"
 >;
 
 type CartLine = {
@@ -38,12 +45,16 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "cod", label: "COD" },
 ];
 
+const COUNTER_PAYMENTS = PAYMENT_METHODS.filter((m) => m.value !== "cod");
+
 export function PosClient({
   books,
   canSeeCost,
+  variant = "office",
 }: {
-  books: PosBook[];
+  books: PosItem[];
   canSeeCost: boolean;
+  variant?: "office" | "counter";
 }) {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -53,35 +64,41 @@ export function PosClient({
   const [successOrder, setSuccessOrder] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const isCounter = variant === "counter";
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return books;
-    return books.filter((b) => b.title.toLowerCase().includes(q));
+    return books.filter(
+      (b) =>
+        b.title.toLowerCase().includes(q) ||
+        (b.format ?? "").toLowerCase().includes(q)
+    );
   }, [books, query]);
 
   const subtotal = cart.reduce((sum, line) => sum + line.qty * line.unitPrice, 0);
 
-  function addToCart(book: PosBook) {
+  function addToCart(item: PosItem) {
     setSuccessOrder(null);
     setError(null);
     setCart((prev) => {
-      const existing = prev.find((l) => l.bookId === book.id);
+      const existing = prev.find((l) => l.bookId === item.id);
       if (existing) {
-        if (existing.qty >= book.stock_qty) return prev;
+        if (existing.qty >= item.stock_qty) return prev;
         return prev.map((l) =>
-          l.bookId === book.id ? { ...l, qty: l.qty + 1 } : l
+          l.bookId === item.id ? { ...l, qty: l.qty + 1 } : l
         );
       }
-      if (book.stock_qty <= 0) return prev;
+      if (item.stock_qty <= 0) return prev;
       return [
         ...prev,
         {
-          bookId: book.id,
-          title: book.title,
+          bookId: item.id,
+          title: item.title,
           qty: 1,
-          unitPrice: Number(book.price_btn),
-          unitCost: Number(book.cost_price_btn),
-          stockQty: book.stock_qty,
+          unitPrice: Number(item.price_btn),
+          unitCost: Number(item.cost_price_btn),
+          stockQty: item.stock_qty,
         },
       ];
     });
@@ -103,6 +120,12 @@ export function PosClient({
 
   function removeLine(bookId: string) {
     setCart((prev) => prev.filter((l) => l.bookId !== bookId));
+  }
+
+  function clearCart() {
+    setCart([]);
+    setSuccessOrder(null);
+    setError(null);
   }
 
   async function checkout() {
@@ -132,9 +155,179 @@ export function PosClient({
     }
   }
 
+  if (isCounter) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
+        {/* Catalog picker */}
+        <div className="shrink-0 space-y-2 border-b border-border p-3">
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              placeholder="Search books, pens, stationery…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-11 rounded-md pl-9 text-base"
+              autoFocus
+            />
+          </div>
+          <div className="flex max-h-[28vh] gap-2 overflow-x-auto pb-1 md:max-h-[32vh] md:flex-wrap md:overflow-y-auto md:overflow-x-hidden">
+            {filtered.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => addToCart(item)}
+                disabled={item.stock_qty <= 0}
+                className="min-w-[9.5rem] shrink-0 rounded-md border border-border bg-card p-2.5 text-left transition-colors hover:bg-muted/60 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 md:min-w-0 md:flex-1 md:basis-[calc(25%-0.5rem)]"
+              >
+                <p className="line-clamp-2 text-sm font-medium leading-snug">
+                  {item.title}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-primary">
+                  {formatBtn(item.price_btn)}
+                </p>
+                <p className="text-muted-foreground text-[0.65rem]">
+                  {item.stock_qty > 0 ? `${item.stock_qty} left` : "Out"}
+                </p>
+              </button>
+            ))}
+            {filtered.length === 0 ? (
+              <p className="text-muted-foreground py-4 text-sm">No items found.</p>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Ticket — empty initially; scrolls as lines grow */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+          {successOrder ? (
+            <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-3">
+              <p className="font-medium text-primary">Sale complete</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Order <span className="font-mono">{successOrder}</span>
+              </p>
+            </div>
+          ) : null}
+          {error ? (
+            <p className="text-destructive mb-3 text-sm">{error}</p>
+          ) : null}
+
+          {cart.length === 0 ? (
+            <div className="flex h-full min-h-[8rem] flex-col items-center justify-center text-center">
+              <p className="text-muted-foreground text-sm">No items yet</p>
+              <p className="text-muted-foreground mt-1 max-w-xs text-xs">
+                Tap books, pens, stationery, or other stock above to build the
+                ticket.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-0">
+              {cart.map((line) => (
+                <li
+                  key={line.bookId}
+                  className="flex items-center justify-between gap-3 border-b border-border/70 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{line.title}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatBtn(line.unitPrice)} each
+                      {canSeeCost ? (
+                        <span className="ml-2">
+                          · cost {formatBtn(line.unitCost)}
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="size-8 p-0"
+                      onClick={() => updateQty(line.bookId, -1)}
+                    >
+                      <Minus className="size-3" />
+                    </Button>
+                    <span className="w-7 text-center text-sm font-medium">
+                      {line.qty}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="size-8 p-0"
+                      onClick={() => updateQty(line.bookId, 1)}
+                      disabled={line.qty >= line.stockQty}
+                    >
+                      <Plus className="size-3" />
+                    </Button>
+                  </div>
+                  <span className="w-20 text-right text-sm font-semibold">
+                    {formatBtn(line.qty * line.unitPrice)}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground size-8 shrink-0 p-0"
+                    onClick={() => removeLine(line.bookId)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Fixed charge footer */}
+        <footer className="shrink-0 border-t border-border bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)]">
+          <div className="mb-3 flex gap-1.5">
+            {COUNTER_PAYMENTS.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setPaymentMethod(m.value)}
+                className={cn(
+                  "flex-1 rounded-md border px-2 py-2 text-xs font-semibold transition-colors",
+                  paymentMethod === m.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <div className="mb-2 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-muted-foreground text-[0.65rem] tracking-wide uppercase">
+                Amount
+              </p>
+              <p className="font-heading text-2xl font-semibold tracking-tight">
+                {formatBtn(subtotal)}
+              </p>
+            </div>
+            {cart.length > 0 ? (
+              <Button type="button" variant="ghost" size="sm" onClick={clearCart}>
+                Clear
+              </Button>
+            ) : null}
+          </div>
+          <Button
+            type="button"
+            className="h-12 w-full text-base font-semibold tracking-wide"
+            disabled={!cart.length || loading}
+            onClick={checkout}
+          >
+            {loading ? "Processing…" : "Charge"}
+          </Button>
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-      <section className="space-y-4">
+      <section className="space-y-3">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
           <Input
@@ -165,7 +358,7 @@ export function PosClient({
           ))}
         </div>
         {filtered.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No books match your search.</p>
+          <p className="text-muted-foreground text-sm">No items match your search.</p>
         ) : null}
       </section>
 
@@ -173,7 +366,9 @@ export function PosClient({
         <CardHeader>
           <CardTitle>Cart</CardTitle>
           <CardDescription>
-            {cart.length ? `${cart.length} line(s)` : "Add books from the catalogue"}
+            {cart.length
+              ? `${cart.length} line(s)`
+              : "Add items from the catalogue"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

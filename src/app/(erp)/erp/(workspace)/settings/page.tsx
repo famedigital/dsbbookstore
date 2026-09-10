@@ -87,6 +87,11 @@ export default async function SettingsPage() {
               name="receipt_footer"
               value={store.receipt_footer ?? ""}
             />
+            <input
+              type="hidden"
+              name="bank_qr_image_url"
+              value={store.bank_qr_image_url ?? ""}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               {STOREFRONT_THEMES.map((theme) => (
@@ -206,6 +211,19 @@ export default async function SettingsPage() {
                 rows={2}
                 defaultValue={store.receipt_footer ?? ""}
               />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="bank_qr_image_url">Bhutan QR image URL</Label>
+              <Input
+                id="bank_qr_image_url"
+                name="bank_qr_image_url"
+                type="url"
+                placeholder="https://…"
+                defaultValue={store.bank_qr_image_url ?? ""}
+              />
+              <p className="text-muted-foreground text-xs">
+                Shown on Counter when tendering with Bhutan QR.
+              </p>
             </div>
             <div className="sm:col-span-2">
               <Button type="submit">Save settings</Button>

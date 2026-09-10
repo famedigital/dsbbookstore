@@ -3,7 +3,6 @@ import Link from "next/link";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { StorefrontShell } from "@/components/storefront/shell";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
-import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Visit" };
 
@@ -13,9 +12,14 @@ export default async function VisitPage() {
     store_name: "DSB Books",
     address_line1: "Jojo's Shopping Complex, Chang Lam",
     city: "Thimphu",
-    phone: null as string | null,
-    opening_hours: null as string | null,
+    country: "Bhutan",
+    phone: "02 326275",
+    opening_hours: "Typically 9:00 – 20:00",
     email: null as string | null,
+    visit_directions:
+      "Ground floor, Jojo's Shopping Complex — look for the blue DSB BOOKS sign near Druk Hotel.",
+    public_tagline:
+      "Bhutan's oldest bookstore on Chang Lam — books, stationery, and enquiries welcome.",
   };
 
   if (isSupabaseConfigured()) {
@@ -25,119 +29,163 @@ export default async function VisitPage() {
       .select("*")
       .eq("id", 1)
       .maybeSingle();
-    if (data) settings = { ...settings, ...data };
+    if (data) {
+      settings = {
+        ...settings,
+        ...data,
+        phone: data.phone || settings.phone,
+        opening_hours: data.opening_hours || settings.opening_hours,
+        visit_directions: data.visit_directions || settings.visit_directions,
+        public_tagline: data.public_tagline || settings.public_tagline,
+      };
+    }
   }
+
+  const mapsQuery = encodeURIComponent(
+    [settings.address_line1, settings.city, settings.country || "Bhutan"]
+      .filter(Boolean)
+      .join(", ")
+  );
 
   return (
     <StorefrontShell active="/visit" theme={theme}>
-      <div className="relative isolate min-h-[48vh] overflow-hidden bg-[color:var(--dsb-ink)]">
+      {/* Full-bleed hero — brand first */}
+      <section className="relative isolate min-h-[70vh] overflow-hidden md:min-h-[78vh]">
         <Image
           src="/images/hero-dsb-exterior.jpg"
-          alt="DSB BOOKS sign beside Chang Lam, Thimphu"
+          alt="DSB BOOKS on Chang Lam, Thimphu"
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[center_30%] opacity-90"
+          className="object-cover object-[center_28%] scale-105 animate-[sf-rise_1.1s_ease_both]"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(20,17,15,0.88),rgba(20,17,15,0.35))]" />
-        <div className="relative z-10 mx-auto flex min-h-[48vh] w-full max-w-6xl items-end px-6 pb-14 pt-24">
-          <div className="max-w-xl text-[color:var(--dsb-ivory)]">
-            <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-              Chang Lam · Clock Tower
-            </p>
-            <h1 className="mt-3 font-heading text-5xl font-semibold tracking-[-0.02em] md:text-6xl">
-              Visit the store
-            </h1>
-            <p className="mt-4 text-base text-[color:var(--dsb-ivory)]/75">
-              {settings.store_name} — Bhutan&apos;s oldest bookstore in Thimphu.
-            </p>
-          </div>
-        </div>
-      </div>
+        <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(20,17,15,0.92)_0%,rgba(20,17,15,0.55)_48%,rgba(20,17,15,0.25)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(92,36,28,0.35),transparent_55%)]" />
 
-      <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-16 md:grid-cols-2">
-        <div className="space-y-6 text-sm leading-relaxed">
-          <div>
-            <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-              Address
-            </p>
-            <p className="mt-3 text-base">
-              {settings.address_line1}
-              <br />
-              {settings.city}, Bhutan
-            </p>
-            <p className="mt-2 text-muted-foreground">
-              Ground floor, Jojo&apos;s Shopping Complex — look for the blue
-              DSB BOOKS sign near Druk Hotel.
-            </p>
+        <div className="relative z-10 mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col justify-end px-4 pb-10 pt-24 md:min-h-[78vh] md:px-6 md:pb-16 md:pt-28">
+          <p className="sf-eyebrow text-[color:var(--dsb-gilt)] sf-rise">
+            Chang Lam · Thimphu
+          </p>
+          <h1 className="sf-rise-delay mt-3 font-heading text-4xl tracking-[-0.03em] text-[color:var(--dsb-ivory)] md:text-6xl lg:text-7xl">
+            {settings.store_name}
+          </h1>
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-[color:var(--dsb-ivory)]/75 md:mt-5 md:text-base">
+            {settings.public_tagline}
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3 md:mt-8">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+              target="_blank"
+              rel="noreferrer"
+              className="sf-btn !px-5 !py-2.5"
+            >
+              Open in Maps
+            </a>
+            <Link href="/enquiry" className="sf-btn-outline !px-5 !py-2.5">
+              Enquire
+            </Link>
           </div>
-          {settings.opening_hours ? (
-            <div>
-              <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-                Hours
-              </p>
-              <p className="mt-3 text-base">{settings.opening_hours}</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-                Hours
-              </p>
-              <p className="mt-3 text-base">Typically 9:00 – 20:00</p>
-            </div>
-          )}
-          {settings.phone ? (
-            <div>
-              <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-                Phone
-              </p>
-              <p className="mt-3 text-base">{settings.phone}</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-                Phone
-              </p>
-              <p className="mt-3 text-base">02 326275 · 02 326270 · 02 323122</p>
-            </div>
-          )}
-          {settings.email ? (
-            <div>
-              <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
-                Email
-              </p>
-              <p className="mt-3 text-base">{settings.email}</p>
-            </div>
-          ) : null}
-          <Button
-            asChild
-            className="rounded-none bg-[color:var(--dsb-lacquer)] hover:bg-[#4a1c16]"
-          >
-            <Link href="/enquiry">Send an enquiry</Link>
-          </Button>
         </div>
+      </section>
 
-        <div className="grid gap-3">
-          <div className="relative aspect-[4/3] overflow-hidden bg-[color:var(--dsb-stone)]">
-            <Image
-              src="/images/hero-dsb-interior.jpg"
-              alt="Bhutan Books shelves inside DSB Books"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-            />
+      {/* One job: how to find us */}
+      <section className="border-b border-[color:var(--sf-line)] bg-[color:var(--sf-surface)]">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 md:grid-cols-12 md:gap-10 md:px-6 md:py-14">
+          <div className="md:col-span-5">
+            <p className="sf-eyebrow">Find us</p>
+            <h2 className="sf-title mt-2 text-2xl md:text-3xl">On Chang Lam</h2>
+            <p className="mt-3 text-sm leading-relaxed text-[color:var(--sf-muted)] md:text-base">
+              {settings.visit_directions}
+            </p>
           </div>
-          <div className="relative aspect-[16/10] overflow-hidden bg-[color:var(--dsb-stone)]">
-            <Image
-              src="/images/hero-dsb-magazines.jpg"
-              alt="Magazines and periodicals at DSB Books"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-            />
+          <dl className="grid gap-6 sm:grid-cols-2 md:col-span-7 md:gap-8">
+            <div>
+              <dt className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-accent)] uppercase">
+                Address
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-[color:var(--sf-ink)] md:text-base">
+                {settings.address_line1}
+                <br />
+                {settings.city}
+                {settings.country ? `, ${settings.country}` : ""}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-accent)] uppercase">
+                Hours
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-[color:var(--sf-ink)] md:text-base whitespace-pre-line">
+                {settings.opening_hours}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-accent)] uppercase">
+                Phone
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-[color:var(--sf-ink)] md:text-base">
+                <a
+                  href={`tel:${String(settings.phone).replace(/\s/g, "")}`}
+                  className="hover:text-[color:var(--sf-accent)]"
+                >
+                  {settings.phone}
+                </a>
+              </dd>
+            </div>
+            {settings.email ? (
+              <div>
+                <dt className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-accent)] uppercase">
+                  Email
+                </dt>
+                <dd className="mt-2 text-sm leading-relaxed text-[color:var(--sf-ink)] md:text-base">
+                  <a
+                    href={`mailto:${settings.email}`}
+                    className="hover:text-[color:var(--sf-accent)]"
+                  >
+                    {settings.email}
+                  </a>
+                </dd>
+              </div>
+            ) : (
+              <div>
+                <dt className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-accent)] uppercase">
+                  Also
+                </dt>
+                <dd className="mt-2 text-sm leading-relaxed text-[color:var(--sf-ink)] md:text-base">
+                  02 326270 · 02 323122
+                </dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      </section>
+
+      {/* Atmosphere — one visual plane */}
+      <section className="relative isolate min-h-[42vh] overflow-hidden md:min-h-[52vh]">
+        <Image
+          src="/images/hero-dsb-interior.jpg"
+          alt="Shelves inside DSB Books"
+          fill
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(20,17,15,0.75),rgba(20,17,15,0.15))]" />
+        <div className="relative z-10 mx-auto flex min-h-[42vh] w-full max-w-6xl items-end px-4 pb-8 md:min-h-[52vh] md:px-6 md:pb-12">
+          <div className="max-w-lg text-[color:var(--dsb-ivory)]">
+            <p className="sf-eyebrow text-[color:var(--dsb-gilt)]">Inside the shop</p>
+            <p className="mt-2 font-heading text-2xl tracking-tight md:text-3xl">
+              Browse books and stationery on the ground floor.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/books" className="sf-btn !px-4 !py-2 text-sm">
+                Books
+              </Link>
+              <Link href="/stationery" className="sf-btn-outline !px-4 !py-2 text-sm">
+                Stationery
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </StorefrontShell>
   );
 }

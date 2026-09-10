@@ -72,8 +72,8 @@ export default async function BookDetailPage({
 
   return (
     <StorefrontShell active="/books" theme={theme}>
-      <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-14 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:py-20">
-        <div className="bg-[color:var(--dsb-stone)] p-3 md:p-5">
+      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-12 md:px-6 md:py-14">
+        <div className="mx-auto w-full max-w-[220px] bg-[color:var(--dsb-stone)] p-2 sm:max-w-xs md:mx-0 md:max-w-none md:p-5">
           <BookCover
             publicId={book.cover_public_id}
             alt={book.title}
@@ -86,16 +86,18 @@ export default async function BookDetailPage({
           <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
             {availabilityLabel(book.availability_status)}
           </p>
-          <h1 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.02em] md:text-6xl">
+          <h1 className="mt-3 font-heading text-3xl font-semibold tracking-[-0.02em] md:mt-4 md:text-5xl">
             {book.title}
           </h1>
           {book.subtitle ? (
-            <p className="mt-4 text-lg text-muted-foreground">{book.subtitle}</p>
+            <p className="mt-3 text-base text-muted-foreground md:mt-4 md:text-lg">
+              {book.subtitle}
+            </p>
           ) : null}
-          <p className="mt-8 font-heading text-3xl text-[color:var(--dsb-lacquer)]">
+          <p className="mt-5 font-heading text-2xl text-[color:var(--dsb-lacquer)] md:mt-8 md:text-3xl">
             {formatBtn(book.price_btn)}
           </p>
-          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-y border-[color:var(--dsb-line)] py-6 text-sm">
+          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-[color:var(--dsb-line)] py-4 text-sm md:mt-8 md:gap-x-6 md:gap-y-4 md:py-6">
             <div>
               <dt className="text-[0.65rem] tracking-[0.16em] text-muted-foreground uppercase">
                 ISBN
@@ -134,13 +136,13 @@ export default async function BookDetailPage({
             </div>
           </dl>
           {book.description ? (
-            <p className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-foreground/90">
+            <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 md:mt-8 md:text-base">
               {book.description}
             </p>
           ) : null}
 
           {sent === "1" ? (
-            <Alert className="mt-10 rounded-none border-[color:var(--dsb-gilt)]/40 bg-[color:var(--dsb-stone)]/50">
+            <Alert className="mt-6 rounded-none border-[color:var(--dsb-gilt)]/40 bg-[color:var(--dsb-stone)]/50 md:mt-10">
               <AlertDescription>
                 Thank you — your enquiry has been sent. We will reply by email.
               </AlertDescription>
@@ -148,9 +150,11 @@ export default async function BookDetailPage({
           ) : (
             <form
               action={submitPublicEnquiry}
-              className="mt-10 space-y-3 border border-[color:var(--dsb-line)] bg-[color:var(--dsb-stone)]/35 p-6"
+              className="mt-6 space-y-3 border border-[color:var(--dsb-line)] bg-[color:var(--dsb-stone)]/35 p-4 md:mt-10 md:p-6"
             >
-              <h2 className="font-heading text-2xl">Enquire about this book</h2>
+              <h2 className="font-heading text-xl md:text-2xl">
+                Enquire about this book
+              </h2>
               <input type="hidden" name="book_id" value={book.id} />
               <input type="hidden" name="book_slug" value={book.slug} />
               <div className="space-y-1">

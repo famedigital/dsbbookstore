@@ -20,14 +20,14 @@ export default async function EnquiryPage({
 
   return (
     <StorefrontShell active="/enquiry" theme={theme}>
-      <div className="mx-auto w-full max-w-xl px-6 py-14 md:py-20">
+      <div className="mx-auto w-full max-w-xl px-4 py-8 md:px-6 md:py-14">
         <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
           Contact
         </p>
-        <h1 className="mt-3 font-heading text-5xl font-semibold tracking-[-0.02em]">
+        <h1 className="mt-2 font-heading text-2xl font-semibold tracking-[-0.02em] md:mt-3 md:text-4xl">
           Enquiry
         </h1>
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="mt-3 text-sm text-muted-foreground md:mt-4">
           Ask about a title, school orders, or store pickup in Thimphu.
         </p>
 

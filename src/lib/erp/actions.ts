@@ -35,6 +35,10 @@ export async function upsertBook(formData: FormData) {
 
   const pageCountRaw = String(formData.get("page_count") || "").trim();
   const page_count = pageCountRaw ? Number(pageCountRaw) : null;
+  const kindRaw = String(formData.get("product_kind") || "book");
+  const product_kind = ["book", "stationery", "other"].includes(kindRaw)
+    ? kindRaw
+    : "book";
 
   const payload = {
     title,
@@ -42,6 +46,9 @@ export async function upsertBook(formData: FormData) {
     slug: String(formData.get("slug") || slugify(title)),
     description: String(formData.get("description") || "") || null,
     isbn_13: String(formData.get("isbn_13") || "") || null,
+    barcode: String(formData.get("barcode") || "") || null,
+    sku_code: String(formData.get("sku_code") || "") || null,
+    product_kind,
     language: String(formData.get("language") || "English"),
     format: String(formData.get("format") || "paperback"),
     publisher_name: String(formData.get("publisher_name") || "DSB Publication"),
@@ -61,24 +68,117 @@ export async function upsertBook(formData: FormData) {
   if (id) {
     const { error } = await supabase.from("books").update(payload).eq("id", id);
     if (error) throw new Error(error.message);
-    await audit(userId, "book.update", "book", id, { title });
+    await audit(userId, "book.update", "book", id, { title, product_kind });
   } else {
+    const stockQty = Number(formData.get("stock_qty") || 0);
     const { data, error } = await supabase
       .from("books")
-      .insert({ ...payload, cost_price_btn: Number(formData.get("cost_price_btn") || 0) })
+      .insert({
+        ...payload,
+        cost_price_btn: Number(formData.get("cost_price_btn") || 0),
+        stock_qty: Number.isFinite(stockQty) ? Math.max(0, stockQty) : 0,
+      })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
     bookId = data.id;
-    await audit(userId, "book.create", "book", data.id, { title });
+    await audit(userId, "book.create", "book", data.id, { title, product_kind });
   }
 
   revalidatePath("/erp/catalogue");
   revalidatePath("/books");
+  revalidatePath("/stationery");
   if (bookId) {
     revalidatePath(`/erp/catalogue/${bookId}`);
     redirect(`/erp/catalogue/${bookId}`);
   }
+}
+
+export async function importProductsCsv(formData: FormData) {
+  const { userId, profile } = await requireStaff();
+  const supabase = await createClient();
+  const raw = String(formData.get("csv") || "").trim();
+  if (!raw) throw new Error("Paste or upload CSV content");
+
+  const lines = raw.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) throw new Error("CSV needs a header row and at least one product");
+
+  function splitCsv(line: string) {
+    const out: string[] = [];
+    let cur = "";
+    let q = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        q = !q;
+        continue;
+      }
+      if (ch === "," && !q) {
+        out.push(cur.trim());
+        cur = "";
+        continue;
+      }
+      cur += ch;
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  const headers = splitCsv(lines[0]).map((h) => h.toLowerCase().replace(/\s+/g, "_"));
+  const titleIdx = headers.indexOf("title");
+  if (titleIdx < 0) throw new Error("CSV must include a title column");
+
+  const idx = (name: string) => headers.indexOf(name);
+  let created = 0;
+
+  for (const line of lines.slice(1)) {
+    const cols = splitCsv(line);
+    const title = (cols[titleIdx] || "").trim();
+    if (!title) continue;
+    const kindRaw = (cols[idx("product_kind")] || cols[idx("kind")] || "book").toLowerCase();
+    const product_kind = ["book", "stationery", "other"].includes(kindRaw)
+      ? kindRaw
+      : "book";
+    const price = Number(cols[idx("price_btn")] || cols[idx("price")] || 0);
+    const cost = Number(cols[idx("cost_price_btn")] || cols[idx("cost")] || 0);
+    const stock = Number(cols[idx("stock_qty")] || cols[idx("stock")] || 0);
+    const payload = {
+      title,
+      slug: slugify(title),
+      product_kind,
+      isbn_13: cols[idx("isbn_13")] || cols[idx("isbn")] || null,
+      barcode: cols[idx("barcode")] || null,
+      sku_code: cols[idx("sku_code")] || cols[idx("sku")] || null,
+      language: cols[idx("language")] || "English",
+      format: cols[idx("format")] || (product_kind === "book" ? "paperback" : "unit"),
+      publisher_name: cols[idx("publisher_name")] || cols[idx("publisher")] || "DSB Publication",
+      price_btn: Number.isFinite(price) ? price : 0,
+      cost_price_btn:
+        profile.role === "staff" ? 0 : Number.isFinite(cost) ? cost : 0,
+      stock_qty: Number.isFinite(stock) ? Math.max(0, stock) : 0,
+      is_published: ["1", "true", "yes", "y"].includes(
+        String(cols[idx("is_published")] || "").toLowerCase()
+      ),
+      description: cols[idx("description")] || null,
+    };
+    const { data, error } = await supabase
+      .from("books")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(`${title}: ${error.message}`);
+    await audit(userId, "book.create", "book", data.id, {
+      title,
+      product_kind,
+      import: true,
+    });
+    created += 1;
+  }
+
+  revalidatePath("/erp/catalogue");
+  revalidatePath("/books");
+  revalidatePath("/stationery");
+  redirect(`/erp/catalogue?imported=${created}`);
 }
 
 export async function adjustStock(formData: FormData) {
@@ -117,6 +217,8 @@ export async function createPosSale(input: {
   paymentMethod: PaymentMethod;
   customerName?: string;
   customerPhone?: string;
+  tendered?: number;
+  paymentReference?: string;
 }) {
   const { userId } = await requireStaff();
   const supabase = await createClient();
@@ -127,6 +229,15 @@ export async function createPosSale(input: {
     (sum, i) => sum + i.qty * i.unitPrice,
     0
   );
+
+  if (
+    input.paymentMethod === "cash" &&
+    input.tendered != null &&
+    input.tendered + 0.001 < subtotal
+  ) {
+    throw new Error("Need cash to cover the due");
+  }
+
   const number = orderNumber();
 
   const { data: order, error: orderError } = await supabase
@@ -160,11 +271,19 @@ export async function createPosSale(input: {
   const { error: itemsError } = await supabase.from("order_items").insert(lines);
   if (itemsError) throw new Error(itemsError.message);
 
+  const refParts = [
+    input.paymentReference?.trim() || "",
+    input.paymentMethod === "cash" && input.tendered != null
+      ? `cash_in=${input.tendered}`
+      : "",
+  ].filter(Boolean);
+
   const { error: payError } = await supabase.from("payments").insert({
     order_id: order.id,
     method: input.paymentMethod,
     status: input.paymentMethod === "cod" ? "pending" : "completed",
     amount_btn: subtotal,
+    reference: refParts.join(" ") || null,
     received_by: userId,
     paid_at: input.paymentMethod === "cod" ? null : new Date().toISOString(),
   });
@@ -186,11 +305,13 @@ export async function createPosSale(input: {
   await audit(userId, "pos.sale", "order", order.id, {
     order_number: number,
     total: subtotal,
+    tendered: input.tendered,
   });
 
   revalidatePath("/erp/orders");
   revalidatePath("/erp/inventory");
   revalidatePath("/erp/pos");
+  revalidatePath("/erp/counter");
   revalidatePath("/erp");
 
   return { orderId: order.id, orderNumber: number };
@@ -403,14 +524,18 @@ export async function updateStoreSettings(formData: FormData) {
       address_line1: String(formData.get("address_line1") || "") || null,
       low_stock_default: Number(formData.get("low_stock_default") || 3),
       receipt_footer: String(formData.get("receipt_footer") || "") || null,
+      bank_qr_image_url:
+        String(formData.get("bank_qr_image_url") || "") || null,
       storefront_theme,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1);
   if (error) throw new Error(error.message);
   revalidatePath("/erp/settings");
+  revalidatePath("/erp/counter");
   revalidatePath("/");
   revalidatePath("/books");
+  revalidatePath("/stationery");
   revalidatePath("/authors");
   revalidatePath("/visit");
   revalidatePath("/enquiry");

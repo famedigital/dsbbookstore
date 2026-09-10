@@ -165,37 +165,46 @@
   --radius: 1.25rem;
 }
 
-/* Atelier lacquer */
+/* Chang Lam atelier — lacquer, pine, gilt, paper grain */
 [data-theme="atelier"] {
-  --sf-bg: #f3eee4;
-  --sf-surface: #faf7f1;
+  --sf-bg: #efe6d6;
+  --sf-surface: #f7f1e6;
   --sf-ink: #14110f;
-  --sf-muted: #5c564c;
+  --sf-muted: #6a6358;
   --sf-accent: #5c241c;
-  --sf-accent-soft: #e8e1d4;
-  --sf-accent-hover: #4a1c16;
-  --sf-line: #d4cbb8;
-  --sf-hero: #14110f;
-  --sf-radius: 0.25rem;
+  --sf-accent-soft: #e8dfd0;
+  --sf-accent-hover: #3f1812;
+  --sf-line: #d2c7b0;
+  --sf-gilt: #9c7a3e;
+  --sf-pine: #24352c;
+  --sf-night: #1a2430;
+  --sf-ivory: #f7f2e8;
+  --sf-hero: linear-gradient(155deg, #e4d8c4 0%, #f4ebe0 42%, #e9dfd0 100%);
+  --sf-radius: 0.15rem;
   --sf-btn-radius: 0;
-  --sf-card-shadow: none;
+  --sf-card-shadow: 0 18px 48px rgba(20, 17, 15, 0.1);
+  --dsb-lacquer: #5c241c;
+  --dsb-gilt: #9c7a3e;
+  --dsb-ink: #14110f;
+  --dsb-ivory: #f7f2e8;
+  --dsb-stone: #d2c7b0;
 
-  --background: #f3eee4;
+  --background: #efe6d6;
   --foreground: #14110f;
-  --card: #faf7f1;
+  --card: #f7f1e6;
   --card-foreground: #14110f;
   --primary: #5c241c;
   --primary-foreground: #f7f2e8;
   --secondary: #24352c;
   --secondary-foreground: #f3eee4;
-  --muted: #e8e1d4;
-  --muted-foreground: #5c564c;
+  --muted: #e4dbc8;
+  --muted-foreground: #6a6358;
   --accent: #9c7a3e;
   --accent-foreground: #1a150e;
-  --border: #d4cbb8;
-  --input: #d4cbb8;
+  --border: #d2c7b0;
+  --input: #d2c7b0;
   --ring: #9c7a3e;
-  --radius: 0.25rem;
+  --radius: 0.15rem;
 }
 
 .dark {
@@ -236,9 +245,9 @@
 }
 
 .sf-eyebrow {
-  letter-spacing: 0.14em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--sf-accent);
 }
@@ -246,7 +255,82 @@
 .sf-title {
   font-family: var(--font-heading), Georgia, serif;
   color: var(--sf-ink);
-  line-height: 1.15;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.sf-link-gilt {
+  background-image: linear-gradient(var(--sf-gilt), var(--sf-gilt));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  transition: background-size 0.35s ease, color 0.25s ease;
+}
+
+.sf-link-gilt:hover {
+  background-size: 100% 1px;
+  color: var(--sf-accent);
+}
+
+/* Paper grain + soft textile atmosphere (atelier) */
+[data-theme="atelier"] .sf-paper {
+  background-color: var(--sf-bg);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 10% -10%, rgba(156, 122, 62, 0.08), transparent 50%),
+    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(92, 36, 28, 0.06), transparent 45%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+}
+
+/* Dzong-inspired cornice: thin gilt + lacquer band */
+.sf-dzong-top {
+  box-shadow:
+    inset 0 2px 0 0 var(--sf-gilt),
+    inset 0 5px 0 0 var(--sf-accent);
+}
+
+.sf-dzong-foot {
+  box-shadow:
+    inset 0 -3px 0 0 var(--sf-accent),
+    inset 0 -5px 0 0 var(--sf-gilt);
+}
+
+.sf-dzong-rule {
+  height: 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--sf-gilt) 55%, transparent);
+  border-bottom: 3px solid var(--sf-accent);
+  margin: 0;
+}
+
+/* Subtle kira-inspired diamond band (watermark) */
+.sf-textile {
+  position: relative;
+  isolation: isolate;
+}
+
+.sf-textile::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cpath fill='none' stroke='%235c241c' stroke-width='1.2' d='M28 4 L52 28 L28 52 L4 28 Z M28 14 L42 28 L28 42 L14 28 Z'/%3E%3C/svg%3E");
+  background-size: 56px 56px;
+}
+
+.sf-textile > * {
+  position: relative;
+  z-index: 1;
+}
+
+.sf-pine-band {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sf-pine) 92%, #000) 0%,
+    var(--sf-pine) 100%
+  );
+  color: var(--sf-ivory);
 }
 
 .sf-btn {
@@ -256,14 +340,18 @@
   border-radius: var(--sf-btn-radius);
   background: var(--sf-accent);
   color: #fff;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.85rem;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  transition: background 0.2s ease;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 
 .sf-btn:hover {
   background: var(--sf-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(20, 17, 15, 0.16);
 }
 
 .sf-btn-outline {
@@ -274,15 +362,47 @@
   border: 1px solid var(--sf-accent);
   color: var(--sf-accent);
   background: transparent;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.85rem;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  transition: all 0.2s ease;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
 }
 
 .sf-btn-outline:hover {
   background: var(--sf-accent);
   color: #fff;
+  transform: translateY(-1px);
+}
+
+.sf-btn-pine {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--sf-btn-radius);
+  background: var(--sf-pine, #24352c);
+  color: var(--sf-ivory, #f7f2e8);
+  padding: 0.55rem 1.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.sf-btn-pine:hover {
+  background: color-mix(in srgb, var(--sf-pine, #24352c) 85%, #000);
+  transform: translateY(-1px);
+}
+
+@media (min-width: 768px) {
+  .sf-btn,
+  .sf-btn-outline,
+  .sf-btn-pine {
+    padding: 0.8rem 1.6rem;
+    font-size: 0.78rem;
+  }
 }
 
 .sf-card {
@@ -290,4 +410,91 @@
   border: 1px solid var(--sf-line);
   border-radius: var(--sf-radius);
   box-shadow: var(--sf-card-shadow);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.sf-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 50px rgba(20, 17, 15, 0.14);
+}
+
+.sf-cover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 16px 40px rgba(20, 17, 15, 0.18);
+}
+
+@keyframes sf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sf-textile-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 56px 28px;
+  }
+}
+
+.sf-rise {
+  animation: sf-rise 0.7s ease both;
+}
+
+.sf-rise-delay {
+  animation: sf-rise 0.85s ease 0.12s both;
+}
+
+[data-theme="atelier"] .sf-textile::before {
+  animation: sf-textile-drift 48s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-btn,
+  .sf-btn-outline,
+  .sf-btn-pine,
+  .sf-card,
+  .sf-card-hover:hover,
+  .sf-link-gilt {
+    transition: none;
+    transform: none;
+  }
+  .sf-rise,
+  .sf-rise-delay,
+  [data-theme="atelier"] .sf-textile::before {
+    animation: none;
+  }
+}
+
+/* Counter USB / system print — receipt only */
+.counter-receipt-print {
+  display: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .counter-receipt-print,
+  .counter-receipt-print * {
+    visibility: visible !important;
+  }
+  .counter-receipt-print {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    padding: 4mm;
+    color: #000;
+    background: #fff;
+    font-size: 12px;
+  }
 }

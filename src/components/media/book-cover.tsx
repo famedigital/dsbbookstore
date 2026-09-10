@@ -11,6 +11,7 @@ type Props = {
   height: number;
   className?: string;
   sizes?: string;
+  priority?: boolean;
 };
 
 function Placeholder({
@@ -21,11 +22,11 @@ function Placeholder({
 }: Pick<Props, "alt" | "width" | "height" | "className">) {
   return (
     <div
-      className={`flex items-center justify-center bg-[linear-gradient(145deg,#0b3d91_0%,#0f6b4c_55%,#c9a227_100%)] text-white/90 ${className ?? ""}`}
+      className={`flex items-center justify-center bg-[linear-gradient(145deg,#1a1510_0%,#5c241c_55%,#9c7a3e_100%)] text-[#f7f2e8]/90 ${className ?? ""}`}
       style={{ aspectRatio: `${width}/${height}` }}
       aria-label={alt}
     >
-      <span className="px-3 text-center text-xs font-medium tracking-wide">
+      <span className="px-3 text-center text-[0.65rem] font-medium tracking-[0.2em] uppercase">
         DSB
       </span>
     </div>
@@ -48,16 +49,18 @@ export function BookCover({
   height,
   className,
   sizes,
+  priority,
 }: Props) {
+  const frame = `sf-cover object-cover ${className ?? ""}`;
+
   if (!publicId) {
     return (
-      <Placeholder alt={alt} width={width} height={height} className={className} />
+      <Placeholder alt={alt} width={width} height={height} className={frame} />
     );
   }
 
   if (isLocalOrRemoteSrc(publicId)) {
-    // Local sample SVGs and remote URLs — skip Cloudinary pipeline.
-    if (publicId.endsWith(".svg") || publicId.startsWith("http")) {
+    if (publicId.endsWith(".svg")) {
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -65,8 +68,8 @@ export function BookCover({
           alt={alt}
           width={width}
           height={height}
-          className={className}
-          loading="lazy"
+          className={frame}
+          loading={priority ? "eager" : "lazy"}
         />
       );
     }
@@ -78,7 +81,8 @@ export function BookCover({
         width={width}
         height={height}
         sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
-        className={className}
+        className={frame}
+        priority={priority}
       />
     );
   }
@@ -97,7 +101,8 @@ export function BookCover({
         format="auto"
         quality="auto"
         sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
-        className={className}
+        className={frame}
+        priority={priority}
       />
     );
   }
@@ -111,13 +116,13 @@ export function BookCover({
         alt={alt}
         width={width}
         height={height}
-        className={className}
-        loading="lazy"
+        className={frame}
+        loading={priority ? "eager" : "lazy"}
       />
     );
   }
 
   return (
-    <Placeholder alt={alt} width={width} height={height} className={className} />
+    <Placeholder alt={alt} width={width} height={height} className={frame} />
   );
 }

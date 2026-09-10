@@ -68,29 +68,31 @@ export default async function AuthorDetailPage({
 
   return (
     <StorefrontShell active="/authors" theme={theme}>
-      <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-14">
         <Link
           href="/authors"
           className="text-[0.7rem] tracking-[0.2em] text-[color:var(--dsb-gilt)] uppercase hover:text-[color:var(--dsb-lacquer)]"
         >
           ← All authors
         </Link>
-        <h1 className="mt-6 font-heading text-5xl font-semibold tracking-[-0.02em] md:text-6xl">
+        <h1 className="mt-4 font-heading text-3xl font-semibold tracking-[-0.02em] md:mt-6 md:text-5xl">
           {author.name}
         </h1>
         {author.bio ? (
-          <p className="mt-5 max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-muted-foreground">
+          <p className="mt-3 max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground md:mt-5 md:text-base">
             {author.bio}
           </p>
         ) : null}
 
-        <h2 className="mt-14 font-heading text-3xl font-semibold">Books</h2>
+        <h2 className="mt-8 font-heading text-xl font-semibold md:mt-14 md:text-3xl">
+          Books
+        </h2>
         {books.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             No published books linked to this author yet.
           </p>
         ) : (
-          <ul className="mt-8 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-6 grid grid-cols-2 gap-x-3 gap-y-8 md:mt-8 md:gap-x-8 md:gap-y-12 lg:grid-cols-4">
             {books.map((book) => (
               <li key={book.id} className="group">
                 <Link href={`/books/${book.slug}`} className="block">
@@ -103,7 +105,7 @@ export default async function AuthorDetailPage({
                       className="aspect-[2/3] w-full object-cover transition duration-700 group-hover:scale-[1.03]"
                     />
                   </div>
-                  <h3 className="mt-4 font-heading text-2xl group-hover:text-[color:var(--dsb-lacquer)]">
+                  <h3 className="mt-2 font-heading text-sm group-hover:text-[color:var(--dsb-lacquer)] md:mt-4 md:text-2xl">
                     {book.title}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">

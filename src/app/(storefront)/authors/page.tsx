@@ -18,32 +18,34 @@ export default async function AuthorsPage() {
 
   return (
     <StorefrontShell active="/authors" theme={theme}>
-      <div className="mx-auto w-full max-w-6xl px-6 py-14 md:py-20">
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-14">
         <p className="text-[0.65rem] tracking-[0.28em] text-[color:var(--dsb-gilt)] uppercase">
           Voices of the catalogue
         </p>
-        <h1 className="mt-3 font-heading text-5xl font-semibold tracking-[-0.02em] md:text-6xl">
+        <h1 className="mt-2 font-heading text-2xl font-semibold tracking-[-0.02em] md:mt-3 md:text-4xl">
           Authors
         </h1>
-        <p className="mt-4 max-w-xl text-muted-foreground">
+        <p className="mt-3 max-w-xl text-sm text-muted-foreground md:mt-4 md:text-base">
           Writers and contributors published with DSB and stocked on Chang Lam.
         </p>
 
         {!isSupabaseConfigured() ? (
-          <p className="mt-10 text-sm text-muted-foreground">
+          <p className="mt-6 text-sm text-muted-foreground md:mt-10">
             Connect Supabase to load authors.
           </p>
         ) : authors.length === 0 ? (
-          <p className="mt-10 text-sm text-muted-foreground">No authors listed yet.</p>
+          <p className="mt-6 text-sm text-muted-foreground md:mt-10">
+            No authors listed yet.
+          </p>
         ) : (
-          <ul className="mt-12 divide-y divide-[color:var(--dsb-line)] border-y border-[color:var(--dsb-line)]">
+          <ul className="mt-8 divide-y divide-[color:var(--dsb-line)] border-y border-[color:var(--dsb-line)] md:mt-12">
             {authors.map((author) => (
               <li key={author.id}>
                 <Link
                   href={`/authors/${author.slug}`}
-                  className="group flex flex-col gap-2 py-7 transition-colors sm:flex-row sm:items-baseline sm:justify-between"
+                  className="group flex flex-col gap-1.5 py-4 transition-colors sm:flex-row sm:items-baseline sm:justify-between md:gap-2 md:py-7"
                 >
-                  <h2 className="font-heading text-3xl font-medium tracking-[-0.01em] group-hover:text-[color:var(--dsb-lacquer)]">
+                  <h2 className="font-heading text-xl font-medium tracking-[-0.01em] group-hover:text-[color:var(--dsb-lacquer)] md:text-3xl">
                     {author.name}
                   </h2>
                   {author.bio ? (

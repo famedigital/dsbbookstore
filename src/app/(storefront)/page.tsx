@@ -4,11 +4,14 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
+import { INSTITUTIONAL_SECTIONS } from "@/lib/storefront/institutional";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import type { Book } from "@/types/erp";
 
 export default async function HomePage() {
-  const theme = await getStorefrontTheme();
+  const stored = await getStorefrontTheme();
+  // Prefer Chang Lam atelier for depth; UI Kit reads flat/blue on this brand.
+  const theme = stored === "uikit" ? "atelier" : stored;
   let featured: Book[] = [];
   let popular: Book[] = [];
   let spotlight: Book | null = null;
@@ -17,11 +20,12 @@ export default async function HomePage() {
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
-    const [{ data: books }, { data: store }] = await Promise.all([
+    const [{ data: books, error }, { data: store }] = await Promise.all([
       supabase
         .from("books")
         .select("*")
         .eq("is_published", true)
+        .eq("product_kind", "book")
         .order("updated_at", { ascending: false })
         .limit(12),
       supabase
@@ -30,90 +34,101 @@ export default async function HomePage() {
         .eq("id", 1)
         .maybeSingle(),
     ]);
-    const list = (books as Book[]) ?? [];
+
+    let list = (books as Book[]) ?? [];
+    if (error || list.length === 0) {
+      const { data: fallback } = await supabase
+        .from("books")
+        .select("*")
+        .eq("is_published", true)
+        .order("updated_at", { ascending: false })
+        .limit(24);
+      list = ((fallback as Book[]) ?? []).filter(
+        (b) => !b.product_kind || b.product_kind === "book"
+      );
+    }
+
     featured = list.slice(0, 4);
     popular = list.slice(0, 8);
-    spotlight = list[0] ?? null;
+    spotlight = list.find((b) => b.is_featured) ?? list[0] ?? null;
     settings = store;
   }
 
+  const heroTitle = spotlight?.title ?? "From the Chang Lam shelves";
+  const heroDescription =
+    (spotlight?.subtitle ||
+      spotlight?.description?.slice(0, 160) ||
+      "DSB Publication titles and trusted reads — browse live stock from Bhutan's oldest bookstore.") +
+    (spotlight?.description && spotlight.description.length > 160 ? "…" : "");
+
   return (
     <StorefrontShell active="/" theme={theme}>
-      <section
-        className="overflow-hidden"
-        style={{ background: "var(--sf-hero)" }}
-      >
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-6 py-14 md:grid-cols-2 md:py-20">
-          <div>
-            <p className="sf-eyebrow">Featured this week</p>
-            <h1 className="sf-title mt-4 text-5xl md:text-6xl">
-              {spotlight?.title ?? settings?.store_name ?? "DSB Books"}
-            </h1>
-            <p className="mt-5 max-w-md text-[color:var(--sf-muted)]">
-              {spotlight?.subtitle ||
-                spotlight?.description?.slice(0, 140) ||
-                "Bhutan's oldest bookstore on Chang Lam — browse DSB Publication and live shelf stock."}
-              {spotlight?.description && spotlight.description.length > 140
-                ? "…"
-                : null}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href={spotlight ? `/books/${spotlight.slug}` : "/books"}
-                className="sf-btn"
-              >
-                {spotlight ? "View book" : "Browse catalogue"}
-              </Link>
-              <Link href="/visit" className="sf-btn-outline">
-                Visit store
-              </Link>
+      {spotlight ? (
+        <section className="sf-textile bg-[color:var(--sf-surface)] pb-12 pt-10 md:pb-20 md:pt-14">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-8 px-4 md:grid-cols-2 md:gap-14 md:px-6">
+            <div className="sf-rise order-2 md:order-1">
+              <p className="sf-eyebrow">Featured title</p>
+              <h1 className="sf-title mt-3 text-2xl md:text-5xl">{heroTitle}</h1>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-[color:var(--sf-muted)] md:text-base">
+                {heroDescription}
+              </p>
+              <p className="mt-5 font-heading text-2xl text-[color:var(--sf-accent)]">
+                {formatBtn(spotlight.price_btn)}
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href={`/books/${spotlight.slug}`} className="sf-btn">
+                  View book
+                </Link>
+                <Link href="/books" className="sf-btn-pine">
+                  All books
+                </Link>
+              </div>
+            </div>
+            <div className="sf-rise-delay order-1 mx-auto w-full max-w-[220px] md:order-2 md:max-w-sm">
+              <div className="sf-card relative aspect-[2/3] overflow-hidden p-2 md:p-3">
+                <BookCover
+                  publicId={spotlight.cover_public_id}
+                  alt={spotlight.title}
+                  width={480}
+                  height={720}
+                  priority
+                  className="h-full w-full rounded-[calc(var(--sf-radius)-0.35rem)] object-cover"
+                />
+              </div>
             </div>
           </div>
-          <div className="sf-card relative mx-auto aspect-[3/4] w-full max-w-md overflow-hidden p-3">
-            {spotlight ? (
-              <BookCover
-                publicId={spotlight.cover_public_id}
-                alt={spotlight.title}
-                width={480}
-                height={640}
-                className="h-full w-full rounded-[calc(var(--sf-radius)-0.4rem)] object-cover"
-              />
-            ) : (
-              <Image
-                src="/images/hero-dsb-interior.jpg"
-                alt="Inside DSB Books, Thimphu"
-                fill
-                priority
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 40vw"
-              />
-            )}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="bg-[color:var(--sf-surface)] py-16 md:py-20">
-        <div className="mx-auto w-full max-w-6xl px-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+      <section className="bg-[color:var(--sf-bg)] py-10 md:py-18">
+        <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="sf-eyebrow">Catalogue</p>
-              <h2 className="sf-title mt-2 text-3xl md:text-4xl">Featured books</h2>
+              <h2 className="sf-title mt-2 text-2xl md:text-4xl">
+                Featured books
+              </h2>
             </div>
-            <Link href="/books" className="text-sm font-semibold text-[color:var(--sf-accent)]">
+            <Link
+              href="/books"
+              className="sf-link-gilt text-sm font-semibold text-[color:var(--sf-accent)]"
+            >
               View all →
             </Link>
           </div>
-
           {featured.length === 0 ? (
-            <p className="mt-10 text-sm text-[color:var(--sf-muted)]">
+            <p className="mt-8 text-sm text-[color:var(--sf-muted)]">
               No published books yet.
             </p>
           ) : (
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="mt-8 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
               {featured.map((book) => (
                 <li key={book.id}>
-                  <Link href={`/books/${book.slug}`} className="sf-card group block overflow-hidden p-3 transition hover:-translate-y-1">
-                    <div className="aspect-[2/3] overflow-hidden rounded-[calc(var(--sf-radius)-0.35rem)] bg-[color:var(--sf-bg)]">
+                  <Link
+                    href={`/books/${book.slug}`}
+                    className="sf-card sf-card-hover group block overflow-hidden p-2 md:p-3"
+                  >
+                    <div className="aspect-[2/3] overflow-hidden bg-[color:var(--sf-bg)]">
                       <BookCover
                         publicId={book.cover_public_id}
                         alt={book.title}
@@ -122,13 +137,13 @@ export default async function HomePage() {
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                       />
                     </div>
-                    <p className="mt-4 text-[0.7rem] font-semibold tracking-wide text-[color:var(--sf-accent)] uppercase">
+                    <p className="mt-3 text-[0.65rem] font-semibold tracking-wide text-[color:var(--sf-accent)] uppercase">
                       {availabilityLabel(book.availability_status)}
                     </p>
-                    <h3 className="mt-1 font-display text-lg leading-snug group-hover:text-[color:var(--sf-accent)]">
+                    <h3 className="mt-1 font-display text-sm leading-snug group-hover:text-[color:var(--sf-accent)] md:text-lg">
                       {book.title}
                     </h3>
-                    <p className="mt-2 font-semibold text-[color:var(--sf-ink)]">
+                    <p className="mt-1 text-sm font-semibold">
                       {formatBtn(book.price_btn)}
                     </p>
                   </Link>
@@ -139,63 +154,72 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {spotlight ? (
-        <section className="bg-[color:var(--sf-bg)] py-16 md:py-20">
-          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-6 md:grid-cols-2">
-            <div className="sf-card relative mx-auto aspect-[3/4] w-full max-w-sm overflow-hidden p-3">
-              <BookCover
-                publicId={spotlight.cover_public_id}
-                alt={spotlight.title}
-                width={420}
-                height={560}
-                className="h-full w-full rounded-[calc(var(--sf-radius)-0.4rem)] object-cover"
-              />
-            </div>
-            <div>
-              <p className="sf-eyebrow">Best seller</p>
-              <h2 className="sf-title mt-3 text-4xl md:text-5xl">{spotlight.title}</h2>
-              <p className="mt-5 max-w-md text-[color:var(--sf-muted)]">
-                {spotlight.description?.slice(0, 180) ||
-                  spotlight.subtitle ||
-                  "Available from the Thimphu shelves."}
-                {spotlight.description && spotlight.description.length > 180
-                  ? "…"
-                  : null}
-              </p>
-              <p className="mt-6 text-2xl font-semibold text-[color:var(--sf-accent)]">
-                {formatBtn(spotlight.price_btn)}
-              </p>
-              <Link href={`/books/${spotlight.slug}`} className="sf-btn mt-6">
-                Shop it now
+      <section className="sf-pine-band sf-textile py-12 md:py-16">
+        <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 md:grid-cols-2 md:items-center md:gap-12 md:px-6">
+          <div>
+            <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-[color:var(--sf-gilt)] uppercase">
+              Beyond Thimphu
+            </p>
+            <h2 className="mt-3 font-heading text-3xl tracking-tight md:text-4xl">
+              Australia Bridge &amp; Digital Lab
+            </h2>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/70 md:text-base">
+              Partnerships for publishing, education, and digitisation —
+              connecting Bhutanese books with Australian institutions and
+              digital learning.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/australia"
+                className="sf-btn !bg-[color:var(--sf-gilt)] !text-[color:var(--sf-ink)] hover:!bg-[color:var(--dsb-ivory)]"
+              >
+                Australia
+              </Link>
+              <Link
+                href="/digital-lab"
+                className="sf-btn-outline !border-white/40 !text-white hover:!bg-white hover:!text-[color:var(--sf-pine)]"
+              >
+                Digital Lab
               </Link>
             </div>
           </div>
-        </section>
-      ) : null}
+          <div className="relative aspect-[4/3] overflow-hidden border border-white/10">
+            <Image
+              src="/images/hero-dsb-magazines.jpg"
+              alt="Periodicals and titles at DSB Books"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
+          </div>
+        </div>
+      </section>
 
-      <section className="bg-[color:var(--sf-surface)] py-16 md:py-20">
-        <div className="mx-auto w-full max-w-6xl px-6">
+      <section className="bg-[color:var(--sf-surface)] py-10 md:py-16">
+        <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
           <div className="text-center">
             <p className="sf-eyebrow">Popular</p>
-            <h2 className="sf-title mt-2 text-3xl md:text-4xl">More from the shelf</h2>
+            <h2 className="sf-title mt-2 text-2xl md:text-4xl">
+              More from the shelf
+            </h2>
           </div>
-          <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="mt-8 grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
             {popular.map((book) => (
               <li key={`pop-${book.id}`}>
                 <Link href={`/books/${book.slug}`} className="group block text-center">
-                  <div className="sf-card mx-auto aspect-[2/3] w-full max-w-[220px] overflow-hidden p-2">
+                  <div className="sf-card mx-auto aspect-[2/3] w-full max-w-[200px] overflow-hidden p-2">
                     <BookCover
                       publicId={book.cover_public_id}
                       alt={book.title}
                       width={320}
                       height={480}
-                      className="h-full w-full rounded-[calc(var(--sf-radius)-0.5rem)] object-cover"
+                      className="h-full w-full object-cover"
                     />
                   </div>
-                  <h3 className="mt-4 font-display text-lg group-hover:text-[color:var(--sf-accent)]">
+                  <h3 className="mt-3 font-display text-sm group-hover:text-[color:var(--sf-accent)] md:text-lg">
                     {book.title}
                   </h3>
-                  <p className="mt-1 font-semibold text-[color:var(--sf-accent)]">
+                  <p className="mt-1 text-sm font-semibold text-[color:var(--sf-accent)]">
                     {formatBtn(book.price_btn)}
                   </p>
                 </Link>
@@ -205,31 +229,56 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[color:var(--sf-accent-soft)] py-16">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-6 md:grid-cols-2">
+      <section className="bg-[color:var(--sf-bg)] py-10 md:py-16">
+        <div className="mx-auto w-full max-w-6xl px-4 md:px-6">
+          <p className="sf-eyebrow">Explore DSB</p>
+          <h2 className="sf-title mt-2 text-2xl md:text-4xl">
+            Story, schools &amp; partnerships
+          </h2>
+          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {INSTITUTIONAL_SECTIONS.filter(
+              (s) =>
+                s.href !== "/australia" && s.href !== "/digital-lab"
+            )
+              .slice(0, 4)
+              .map((s) => (
+                <li key={s.href}>
+                  <Link
+                    href={s.href}
+                    className="sf-card sf-card-hover block h-full p-4"
+                  >
+                    <p className="text-[0.6rem] font-semibold tracking-wide text-[color:var(--sf-accent)] uppercase">
+                      {s.label}
+                    </p>
+                    <p className="mt-2 font-display text-base leading-snug">
+                      {s.title}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="sf-textile bg-[color:var(--sf-surface)] py-12 md:py-16">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 md:flex-row md:items-end md:justify-between md:px-6">
           <div>
             <p className="sf-eyebrow">Visit</p>
-            <h2 className="sf-title mt-3 text-4xl">Find us on Chang Lam</h2>
-            <p className="mt-5 max-w-md text-[color:var(--sf-muted)]">
+            <h2 className="sf-title mt-2 max-w-lg text-3xl md:text-5xl">
+              Find us on Chang Lam
+            </h2>
+            <p className="mt-3 max-w-md text-sm text-[color:var(--sf-muted)] md:text-base">
               Jojo&apos;s Shopping Complex near Clock Tower Square.
               {settings?.opening_hours
-                ? ` Open ${settings.opening_hours}.`
+                ? ` ${settings.opening_hours}.`
                 : " Open daily."}
             </p>
-            <Link href="/visit" className="sf-btn mt-8">
-              Store details
-            </Link>
           </div>
-          <div className="sf-card relative aspect-[4/3] overflow-hidden">
-            <Image
-              src="/images/hero-dsb-interior.jpg"
-              alt="DSB Books interior"
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-          </div>
+          <Link href="/visit" className="sf-btn w-fit shrink-0">
+            Store details
+          </Link>
         </div>
+        <hr className="sf-dzong-rule mx-auto mt-10 max-w-6xl" />
       </section>
     </StorefrontShell>
   );

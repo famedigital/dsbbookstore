@@ -24,9 +24,9 @@ export type NavItem = {
 
 export const erpNav: NavItem[] = [
   { title: "Dashboard", href: "/erp", icon: LayoutDashboard },
-  { title: "POS", href: "/erp/pos", icon: ShoppingCart },
+  { title: "Counter", href: "/erp/counter", icon: ShoppingCart },
   { title: "Orders", href: "/erp/orders", icon: ClipboardList },
-  { title: "Catalogue", href: "/erp/catalogue", icon: BookOpen },
+  { title: "Products", href: "/erp/catalogue", icon: BookOpen },
   { title: "Authors", href: "/erp/authors", icon: PenLine },
   { title: "Categories", href: "/erp/categories", icon: Library },
   { title: "Inventory", href: "/erp/inventory", icon: Warehouse },
@@ -58,6 +58,13 @@ export const erpNav: NavItem[] = [
     icon: Settings,
     roles: ["owner"],
   },
+];
+
+export const OFFICE_DOCK: NavItem[] = [
+  { title: "Home", href: "/erp", icon: LayoutDashboard },
+  { title: "Counter", href: "/erp/counter", icon: ShoppingCart },
+  { title: "Products", href: "/erp/catalogue", icon: BookOpen },
+  { title: "Orders", href: "/erp/orders", icon: ClipboardList },
 ];
 
 export function navForRole(role: UserRole) {
