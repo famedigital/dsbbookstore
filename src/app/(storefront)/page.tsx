@@ -107,7 +107,30 @@ export default async function HomePage() {
           .limit(16);
         return {
           catId: c.id,
-          books: ((data ?? []) as Array<{ books: ShelfBook | ShelfBook[] | null }>)
+          books: (
+            (data ?? []) as unknown as Array<{
+              books:
+                | {
+                    id: string;
+                    title: string;
+                    slug: string;
+                    price_btn: number;
+                    cover_public_id: string | null;
+                    is_published?: boolean;
+                    product_kind?: string;
+                  }
+                | {
+                    id: string;
+                    title: string;
+                    slug: string;
+                    price_btn: number;
+                    cover_public_id: string | null;
+                    is_published?: boolean;
+                    product_kind?: string;
+                  }[]
+                | null;
+            }>
+          )
             .flatMap((row) => {
               const b = row.books;
               if (!b) return [];
@@ -115,10 +138,8 @@ export default async function HomePage() {
             })
             .filter(
               (b) =>
-                (b as ShelfBook & { is_published?: boolean; product_kind?: string })
-                  .is_published !== false &&
-                (!(b as { product_kind?: string }).product_kind ||
-                  (b as { product_kind?: string }).product_kind === "book")
+                b.is_published !== false &&
+                (!b.product_kind || b.product_kind === "book")
             )
             .slice(0, 8)
             .map((b) => ({

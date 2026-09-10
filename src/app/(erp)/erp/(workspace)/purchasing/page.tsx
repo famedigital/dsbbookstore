@@ -42,13 +42,43 @@ export default async function PurchasingPage() {
   ]);
 
   const supplierList = (suppliers ?? []) as Supplier[];
-  const poList = ((purchaseOrders ?? []) as Omit<PoListItem, "invoice_ref">[]).map(
-    (po) => ({
-      ...po,
-      invoice_ref:
-        po.notes?.match(/^Invoice:\s*(.+)$/m)?.[1]?.trim() ?? null,
-    })
-  ) as PoListItem[];
+  const poList: PoListItem[] = ((purchaseOrders ?? []) as Array<{
+    id: string;
+    po_number: string;
+    status: PoListItem["status"];
+    ordered_at: string | null;
+    notes: string | null;
+    suppliers: { name: string } | { name: string }[] | null;
+    purchase_order_items: Array<{
+      id: string;
+      book_id: string;
+      qty_ordered: number;
+      qty_received: number;
+      unit_cost_btn: number;
+      books:
+        | { title: string; barcode: string | null }
+        | { title: string; barcode: string | null }[]
+        | null;
+    }>;
+  }>).map((po) => ({
+    id: po.id,
+    po_number: po.po_number,
+    status: po.status,
+    ordered_at: po.ordered_at,
+    notes: po.notes,
+    invoice_ref: po.notes?.match(/^Invoice:\s*(.+)$/m)?.[1]?.trim() ?? null,
+    suppliers: Array.isArray(po.suppliers)
+      ? (po.suppliers[0] ?? null)
+      : po.suppliers,
+    purchase_order_items: (po.purchase_order_items ?? []).map((item) => ({
+      id: item.id,
+      book_id: item.book_id,
+      qty_ordered: item.qty_ordered,
+      qty_received: item.qty_received,
+      unit_cost_btn: item.unit_cost_btn,
+      books: Array.isArray(item.books) ? (item.books[0] ?? null) : item.books,
+    })),
+  }));
 
   return (
     <div className="space-y-8">
