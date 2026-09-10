@@ -51,7 +51,7 @@ export default async function AustraliaPage() {
   const theme = await getStorefrontTheme();
 
   return (
-    <StorefrontShell active="/australia" theme={theme}>
+    <StorefrontShell active="/digital-lab" theme={theme}>
       <section className="relative isolate min-h-[58vh] overflow-hidden md:min-h-[68vh]">
         <Image
           src="/images/hero-bookstore.jpg"

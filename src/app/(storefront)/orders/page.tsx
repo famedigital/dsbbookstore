@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import { InstitutionalPage } from "@/components/storefront/institutional-page";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
-import { getSection } from "@/lib/storefront/institutional";
+import { resolveInstitutional } from "@/lib/storefront/resolve-institutional";
+import { notFound } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "International Orders",
-  description:
-    "Enquire about international supply, shipping, and Australia Bridge fulfilment.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const section = await resolveInstitutional("/orders");
+  return {
+    title: section?.title ?? "International Orders",
+    description: section?.summary,
+  };
+}
 
 export default async function OrdersPage() {
   const theme = await getStorefrontTheme();
-  return <InstitutionalPage section={getSection("/orders")!} theme={theme} />;
+  const section = await resolveInstitutional("/orders");
+  if (!section) notFound();
+  return <InstitutionalPage section={section} theme={theme} />;
 }

@@ -526,6 +526,9 @@ export async function updateStoreSettings(formData: FormData) {
       receipt_footer: String(formData.get("receipt_footer") || "") || null,
       bank_qr_image_url:
         String(formData.get("bank_qr_image_url") || "") || null,
+      public_tagline: String(formData.get("public_tagline") || "") || null,
+      visit_directions:
+        String(formData.get("visit_directions") || "") || null,
       storefront_theme,
       updated_at: new Date().toISOString(),
     })
@@ -547,6 +550,92 @@ export async function updateStoreSettings(formData: FormData) {
   revalidatePath("/partner");
   revalidatePath("/impact");
   revalidatePath("/orders");
+}
+
+export async function updateCmsPage(formData: FormData) {
+  await requireManager();
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  if (!id) throw new Error("Missing page id");
+
+  const statusRaw = String(formData.get("status") || "published");
+  const status = statusRaw === "draft" ? "draft" : "published";
+
+  const { error } = await supabase
+    .from("cms_pages")
+    .update({
+      title: String(formData.get("title") || "").trim() || "Untitled",
+      seo_title: String(formData.get("seo_title") || "") || null,
+      seo_description: String(formData.get("seo_description") || "") || null,
+      status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/erp/content");
+  revalidatePath(`/erp/content/${id}`);
+  revalidatePath("/", "layout");
+}
+
+export async function updateCmsSection(formData: FormData) {
+  await requireManager();
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  const pageId = String(formData.get("page_id") || "");
+  if (!id) throw new Error("Missing section id");
+
+  const bodyRaw = String(formData.get("body") || "").trim();
+  let body: unknown = [];
+  if (bodyRaw) {
+    try {
+      body = JSON.parse(bodyRaw);
+    } catch {
+      body = bodyRaw
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+    }
+  }
+
+  const { error } = await supabase
+    .from("cms_sections")
+    .update({
+      eyebrow: String(formData.get("eyebrow") || "") || null,
+      heading: String(formData.get("heading") || "") || null,
+      summary: String(formData.get("summary") || "") || null,
+      body,
+      cta_label: String(formData.get("cta_label") || "") || null,
+      cta_href: String(formData.get("cta_href") || "") || null,
+      image_url: String(formData.get("image_url") || "") || null,
+      image_alt: String(formData.get("image_alt") || "") || null,
+      is_visible: formData.get("is_visible") === "on",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  // Keep media library in sync when a local/cloudinary path is set
+  const imageUrl = String(formData.get("image_url") || "").trim();
+  if (imageUrl) {
+    const { data: existing } = await supabase
+      .from("cms_media")
+      .select("id")
+      .eq("url", imageUrl)
+      .maybeSingle();
+    if (!existing) {
+      await supabase.from("cms_media").insert({
+        url: imageUrl.startsWith("/") ? imageUrl : null,
+        public_id: imageUrl.startsWith("/") ? null : imageUrl,
+        alt: String(formData.get("image_alt") || "") || null,
+        kind: "hero",
+      });
+    }
+  }
+
+  revalidatePath("/erp/content");
+  if (pageId) revalidatePath(`/erp/content/${pageId}`);
+  revalidatePath("/", "layout");
 }
 
 export async function updateStaffRole(formData: FormData) {

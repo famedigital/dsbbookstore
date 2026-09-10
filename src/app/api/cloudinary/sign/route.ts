@@ -3,7 +3,7 @@ import { getSessionProfile } from "@/lib/erp/auth";
 import { getCloudinary, isCloudinaryConfigured } from "@/lib/cloudinary";
 import { STAFF_ROLES } from "@/types/erp";
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await getSessionProfile();
   if (!session || !STAFF_ROLES.includes(session.profile.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,9 +16,18 @@ export async function POST() {
     );
   }
 
+  let folder = "dsb/covers";
+  try {
+    const body = (await request.json()) as { folder?: string };
+    if (body.folder === "dsb/cms" || body.folder === "dsb/covers") {
+      folder = body.folder;
+    }
+  } catch {
+    // empty body is fine
+  }
+
   const cld = getCloudinary();
   const timestamp = Math.round(Date.now() / 1000);
-  const folder = "dsb/covers";
   const paramsToSign = { timestamp, folder };
   const signature = cld.utils.api_sign_request(
     paramsToSign,

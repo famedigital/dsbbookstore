@@ -131,7 +131,6 @@ export const PRIMARY_NAV = [
   { href: "/books", label: "Books" },
   { href: "/stationery", label: "Stationery" },
   { href: "/about", label: "About" },
-  { href: "/australia", label: "Australia" },
   { href: "/digital-lab", label: "Digital Lab" },
   { href: "/partner", label: "Partner" },
   { href: "/visit", label: "Visit" },
@@ -147,7 +146,9 @@ export const FOOTER_SHOP = [
   { href: "/orders", label: "International Orders" },
 ] as const;
 
-export const FOOTER_ABOUT = INSTITUTIONAL_SECTIONS.map((s) => ({
+export const FOOTER_ABOUT = INSTITUTIONAL_SECTIONS.filter(
+  (s) => s.href !== "/australia"
+).map((s) => ({
   href: s.href,
   label: s.label,
 }));

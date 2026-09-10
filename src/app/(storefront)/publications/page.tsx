@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import { InstitutionalPage } from "@/components/storefront/institutional-page";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
-import { getSection } from "@/lib/storefront/institutional";
+import { resolveInstitutional } from "@/lib/storefront/resolve-institutional";
+import { notFound } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "DSB Publications",
-  description:
-    "Books published under the DSB imprint — browse the live catalogue.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const section = await resolveInstitutional("/publications");
+  return {
+    title: section?.title ?? "Publications",
+    description: section?.summary,
+  };
+}
 
 export default async function PublicationsPage() {
   const theme = await getStorefrontTheme();
-  return <InstitutionalPage section={getSection("/publications")!} theme={theme} />;
+  const section = await resolveInstitutional("/publications");
+  if (!section) notFound();
+  return <InstitutionalPage section={section} theme={theme} />;
 }

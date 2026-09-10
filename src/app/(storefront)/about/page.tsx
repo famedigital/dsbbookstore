@@ -3,16 +3,19 @@ import Link from "next/link";
 import { StorefrontShell } from "@/components/storefront/shell";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { INSTITUTIONAL_SECTIONS } from "@/lib/storefront/institutional";
+import { resolveInstitutional } from "@/lib/storefront/resolve-institutional";
 
-export const metadata: Metadata = {
-  title: "Our Founder and Family Story",
-  description:
-    "The people and values behind DSB Books — Bhutan’s oldest bookstore on Chang Lam.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const section = await resolveInstitutional("/about");
+  return {
+    title: section?.title ?? "Our Story",
+    description: section?.summary,
+  };
+}
 
 export default async function AboutPage() {
   const theme = await getStorefrontTheme();
-  const section = INSTITUTIONAL_SECTIONS.find((s) => s.href === "/about")!;
+  const section = (await resolveInstitutional("/about"))!;
 
   return (
     <StorefrontShell active="/about" theme={theme}>

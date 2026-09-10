@@ -9,12 +9,16 @@ type Props = {
   value?: string | null;
   onUploaded?: (publicId: string) => void;
   inputName?: string;
+  folder?: "dsb/covers" | "dsb/cms";
+  label?: string;
 };
 
 export function CoverUpload({
   value,
   onUploaded,
   inputName = "cover_public_id",
+  folder = "dsb/covers",
+  label = "Upload cover",
 }: Props) {
   const [publicId, setPublicId] = useState(value ?? "");
   const [uploading, setUploading] = useState(false);
@@ -29,14 +33,20 @@ export function CoverUpload({
     setError(null);
 
     try {
-      const signRes = await fetch("/api/cloudinary/sign", { method: "POST" });
+      const signRes = await fetch("/api/cloudinary/sign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder }),
+      });
       if (!signRes.ok) {
         setManualMode(true);
-        setError("Cloudinary upload unavailable — paste a public_id below.");
+        setError(
+          "Cloudinary upload unavailable — paste a public_id or path below."
+        );
         return;
       }
 
-      const { apiKey, cloudName, timestamp, folder, signature } =
+      const { apiKey, cloudName, timestamp, folder: signedFolder, signature } =
         await signRes.json();
 
       const formData = new FormData();
@@ -44,7 +54,7 @@ export function CoverUpload({
       formData.append("api_key", apiKey);
       formData.append("timestamp", String(timestamp));
       formData.append("signature", signature);
-      formData.append("folder", folder);
+      formData.append("folder", signedFolder);
 
       const uploadRes = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -76,7 +86,7 @@ export function CoverUpload({
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" disabled={uploading} asChild>
           <label className="cursor-pointer">
-            {uploading ? "Uploading…" : "Upload cover"}
+            {uploading ? "Uploading…" : label}
             <input
               type="file"
               accept="image/*"
@@ -95,7 +105,7 @@ export function CoverUpload({
       {error ? <p className="text-destructive text-xs">{error}</p> : null}
       {manualMode || !publicId ? (
         <div className="space-y-1">
-          <Label htmlFor={`${inputName}_manual`}>Cover public ID</Label>
+          <Label htmlFor={`${inputName}_manual`}>Image path / Cloudinary id</Label>
           <Input
             id={`${inputName}_manual`}
             value={publicId}
@@ -103,15 +113,22 @@ export function CoverUpload({
               setPublicId(e.target.value);
               onUploaded?.(e.target.value);
             }}
-            placeholder="dsb/covers/my-book-cover"
+            placeholder="/images/hero.jpg or cloudinary public_id"
           />
-          {manualMode ? (
-            <p className="text-muted-foreground text-xs">
-              Paste a Cloudinary public_id manually if upload is not configured.
-            </p>
-          ) : null}
         </div>
-      ) : null}
+      ) : (
+        <div className="space-y-1">
+          <Label htmlFor={`${inputName}_edit`}>Image path / Cloudinary id</Label>
+          <Input
+            id={`${inputName}_edit`}
+            value={publicId}
+            onChange={(e) => {
+              setPublicId(e.target.value);
+              onUploaded?.(e.target.value);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

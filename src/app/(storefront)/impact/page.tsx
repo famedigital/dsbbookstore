@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import { InstitutionalPage } from "@/components/storefront/institutional-page";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
-import { getSection } from "@/lib/storefront/institutional";
+import { resolveInstitutional } from "@/lib/storefront/resolve-institutional";
+import { notFound } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Earth and Community Impact",
-  description:
-    "Publishing and programmes that respect land, culture, and community.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const section = await resolveInstitutional("/impact");
+  return {
+    title: section?.title ?? "Impact",
+    description: section?.summary,
+  };
+}
 
 export default async function ImpactPage() {
   const theme = await getStorefrontTheme();
-  return <InstitutionalPage section={getSection("/impact")!} theme={theme} />;
+  const section = await resolveInstitutional("/impact");
+  if (!section) notFound();
+  return <InstitutionalPage section={section} theme={theme} />;
 }

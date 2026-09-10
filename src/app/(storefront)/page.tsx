@@ -63,35 +63,51 @@ export default async function HomePage() {
     <StorefrontShell active="/" theme={theme}>
       {spotlight ? (
         <section className="sf-textile bg-[color:var(--sf-surface)] pb-8 pt-6 md:pb-20 md:pt-14">
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-[1.1fr_0.75fr] items-center gap-4 px-3 sm:gap-6 sm:px-4 md:grid-cols-2 md:gap-14 md:px-6">
-            <div className="sf-rise min-w-0">
-              <p className="sf-eyebrow">Featured title</p>
-              <h1 className="sf-title mt-2 md:mt-3">{heroTitle}</h1>
-              <p className="mt-3 max-w-md text-sm leading-relaxed text-[color:var(--sf-muted)] md:mt-4 md:text-base">
-                {heroDescription}
-              </p>
-              <p className="mt-3 font-heading text-xl text-[color:var(--sf-accent)] md:mt-5 md:text-2xl">
-                {formatBtn(spotlight.price_btn)}
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 md:mt-6 md:gap-3">
-                <Link href={`/books/${spotlight.slug}`} className="sf-btn">
-                  View book
-                </Link>
-                <Link href="/books" className="sf-btn-pine">
-                  All books
-                </Link>
+          <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6">
+            <p className="sf-eyebrow">Featured title</p>
+
+            <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-4 md:mt-6 md:grid-cols-2 md:items-center md:gap-14">
+              {/* Left: price + CTAs (mobile); full copy (desktop) */}
+              <div className="sf-rise min-w-0">
+                <h1 className="sf-title mt-1 hidden md:block">{heroTitle}</h1>
+                <p className="mt-4 hidden max-w-md text-sm leading-relaxed text-[color:var(--sf-muted)] md:block md:text-base">
+                  {heroDescription}
+                </p>
+                <p className="font-heading text-xl text-[color:var(--sf-accent)] md:mt-5 md:text-2xl">
+                  {formatBtn(spotlight.price_btn)}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 md:mt-6 md:gap-3">
+                  <Link href={`/books/${spotlight.slug}`} className="sf-btn">
+                    View book
+                  </Link>
+                  <Link href="/books" className="sf-btn-pine">
+                    All books
+                  </Link>
+                </div>
               </div>
-            </div>
-            <div className="sf-rise-delay w-full max-w-[140px] justify-self-end sm:max-w-[180px] md:max-w-sm md:justify-self-auto">
-              <div className="sf-card relative aspect-[2/3] overflow-hidden p-1.5 md:p-3">
-                <BookCover
-                  publicId={spotlight.cover_public_id}
-                  alt={spotlight.title}
-                  width={480}
-                  height={720}
-                  priority
-                  className="h-full w-full rounded-[calc(var(--sf-radius)-0.35rem)] object-cover"
-                />
+
+              {/* Right: book image */}
+              <div className="sf-rise-delay w-[7.5rem] justify-self-end sm:w-[9.5rem] md:w-full md:max-w-sm md:justify-self-auto">
+                <div className="sf-card relative aspect-[2/3] overflow-hidden p-1.5 md:p-3">
+                  <BookCover
+                    publicId={spotlight.cover_public_id}
+                    alt={spotlight.title}
+                    width={480}
+                    height={720}
+                    priority
+                    className="h-full w-full rounded-[calc(var(--sf-radius)-0.35rem)] object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Mobile: title (+ blurb) in one full-width row below */}
+              <div className="col-span-2 min-w-0 md:hidden">
+                <h1 className="sf-title text-[1.35rem] leading-snug tracking-tight">
+                  {heroTitle}
+                </h1>
+                <p className="mt-2 text-sm leading-relaxed text-[color:var(--sf-muted)]">
+                  {heroDescription}
+                </p>
               </div>
             </div>
           </div>

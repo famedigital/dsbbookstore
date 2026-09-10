@@ -92,6 +92,16 @@ export default async function SettingsPage() {
               name="bank_qr_image_url"
               value={store.bank_qr_image_url ?? ""}
             />
+            <input
+              type="hidden"
+              name="public_tagline"
+              value={store.public_tagline ?? ""}
+            />
+            <input
+              type="hidden"
+              name="visit_directions"
+              value={store.visit_directions ?? ""}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               {STOREFRONT_THEMES.map((theme) => (
@@ -191,6 +201,26 @@ export default async function SettingsPage() {
                 name="opening_hours"
                 rows={2}
                 defaultValue={store.opening_hours ?? ""}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="public_tagline">Public tagline</Label>
+              <Textarea
+                id="public_tagline"
+                name="public_tagline"
+                rows={2}
+                defaultValue={store.public_tagline ?? ""}
+                placeholder="Shown on Visit and storefront"
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="visit_directions">Visit directions</Label>
+              <Textarea
+                id="visit_directions"
+                name="visit_directions"
+                rows={3}
+                defaultValue={store.visit_directions ?? ""}
+                placeholder="How to find the shop on Chang Lam"
               />
             </div>
             <div className="space-y-2">
