@@ -50,7 +50,7 @@ export default async function VisitPage() {
   return (
     <StorefrontShell active="/visit" theme={theme}>
       {/* Full-bleed hero — brand first */}
-      <section className="relative isolate min-h-[70vh] overflow-hidden md:min-h-[78vh]">
+      <section className="relative isolate min-h-[38vh] overflow-hidden md:min-h-[70vh]">
         <Image
           src="/images/hero-dsb-exterior.jpg"
           alt="DSB BOOKS on Chang Lam, Thimphu"
@@ -62,17 +62,17 @@ export default async function VisitPage() {
         <div className="absolute inset-0 bg-[linear-gradient(105deg,rgba(20,17,15,0.92)_0%,rgba(20,17,15,0.55)_48%,rgba(20,17,15,0.25)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(92,36,28,0.35),transparent_55%)]" />
 
-        <div className="relative z-10 mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col justify-end px-4 pb-10 pt-24 md:min-h-[78vh] md:px-6 md:pb-16 md:pt-28">
+        <div className="relative z-10 mx-auto flex min-h-[38vh] w-full max-w-6xl flex-col justify-end px-3 pb-7 pt-10 sm:px-4 md:min-h-[70vh] md:px-6 md:pb-16 md:pt-20">
           <p className="sf-eyebrow text-[color:var(--dsb-gilt)] sf-rise">
             Chang Lam · Thimphu
           </p>
-          <h1 className="sf-rise-delay mt-3 font-heading text-4xl tracking-[-0.03em] text-[color:var(--dsb-ivory)] md:text-6xl lg:text-7xl">
+          <h1 className="sf-rise-delay mt-2 font-heading text-[clamp(1.75rem,5vw,4.25rem)] tracking-[-0.03em] text-[color:var(--dsb-ivory)] md:mt-3">
             {settings.store_name}
           </h1>
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-[color:var(--dsb-ivory)]/75 md:mt-5 md:text-base">
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-[color:var(--dsb-ivory)]/75 md:mt-5 md:text-base">
             {settings.public_tagline}
           </p>
-          <div className="mt-7 flex flex-wrap gap-3 md:mt-8">
+          <div className="mt-5 flex flex-wrap gap-2 md:mt-8 md:gap-3">
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
               target="_blank"
@@ -93,7 +93,7 @@ export default async function VisitPage() {
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 md:grid-cols-12 md:gap-10 md:px-6 md:py-14">
           <div className="md:col-span-5">
             <p className="sf-eyebrow">Find us</p>
-            <h2 className="sf-title mt-2 text-2xl md:text-3xl">On Chang Lam</h2>
+            <h2 className="sf-title mt-2">On Chang Lam</h2>
             <p className="mt-3 text-sm leading-relaxed text-[color:var(--sf-muted)] md:text-base">
               {settings.visit_directions}
             </p>

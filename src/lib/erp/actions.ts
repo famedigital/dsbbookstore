@@ -533,12 +533,20 @@ export async function updateStoreSettings(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/erp/settings");
   revalidatePath("/erp/counter");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   revalidatePath("/books");
   revalidatePath("/stationery");
   revalidatePath("/authors");
   revalidatePath("/visit");
   revalidatePath("/enquiry");
+  revalidatePath("/australia");
+  revalidatePath("/digital-lab");
+  revalidatePath("/about");
+  revalidatePath("/publications");
+  revalidatePath("/schools");
+  revalidatePath("/partner");
+  revalidatePath("/impact");
+  revalidatePath("/orders");
 }
 
 export async function updateStaffRole(formData: FormData) {

@@ -113,7 +113,7 @@ export default async function ErpDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Today&apos;s orders</CardDescription>
+            <CardDescription>Today&apos;s sales</CardDescription>
             <CardTitle className="text-3xl tabular-nums">{todayCount}</CardTitle>
             <p className="text-muted-foreground text-sm">
               {formatBtn(todaySum)} total
@@ -139,14 +139,14 @@ export default async function ErpDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent orders</CardTitle>
+            <CardTitle className="text-base">Recent sales</CardTitle>
             <CardDescription>Last 5 transactions</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Order</TableHead>
+                  <TableHead>Sale</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>
@@ -155,7 +155,7 @@ export default async function ErpDashboardPage() {
                 {recentOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-muted-foreground">
-                      No orders yet.
+                      No sales yet.
                     </TableCell>
                   </TableRow>
                 ) : (

@@ -83,7 +83,7 @@ export function OrdersTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Order #</TableHead>
+            <TableHead>Sale #</TableHead>
             <TableHead>Channel</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Customer</TableHead>
@@ -97,7 +97,7 @@ export function OrdersTable({
           {orders.length === 0 ? (
             <TableRow>
               <TableCell colSpan={8} className="text-muted-foreground">
-                No orders yet.
+                No sales yet.
               </TableCell>
             </TableRow>
           ) : (
@@ -192,7 +192,7 @@ export function OrdersTable({
               <hr className="my-3 border-border" />
               <div className="space-y-1.5 text-xs">
                 <p className="flex justify-between gap-3">
-                  <span className="text-muted-foreground">Order</span>
+                  <span className="text-muted-foreground">Sale</span>
                   <span className="font-mono">{selected.order_number}</span>
                 </p>
                 <p className="flex justify-between gap-3">

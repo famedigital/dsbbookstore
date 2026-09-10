@@ -77,7 +77,7 @@ export function DeskSwitch({
       className={cn(
         "inline-flex rounded-md border p-0.5 text-xs font-semibold",
         tone === "dark"
-          ? "border-white/15 bg-white/10"
+          ? "border-white/15 bg-black/35"
           : "border-border bg-muted/40",
         className
       )}
@@ -87,7 +87,9 @@ export function DeskSwitch({
         className={cn(
           "rounded-sm px-3 py-1.5 transition-colors",
           onCounter
-            ? "bg-primary text-primary-foreground"
+            ? tone === "dark"
+              ? "bg-[#c9a227] text-[#14110f]"
+              : "bg-[#5c241c] text-[#f7f2e8]"
             : tone === "dark"
               ? "text-white/65 hover:text-white"
               : "text-muted-foreground hover:text-foreground"
@@ -100,7 +102,9 @@ export function DeskSwitch({
         className={cn(
           "rounded-sm px-3 py-1.5 transition-colors",
           !onCounter
-            ? "bg-primary text-primary-foreground"
+            ? tone === "dark"
+              ? "bg-[#c9a227] text-[#14110f]"
+              : "bg-[#5c241c] text-[#f7f2e8]"
             : tone === "dark"
               ? "text-white/65 hover:text-white"
               : "text-muted-foreground hover:text-foreground"
@@ -131,10 +135,10 @@ export function ErpSidebar({ profile }: { profile: Profile }) {
     router.refresh();
   }
 
-  // Counter desk: only brand + desk switch. No burger, dock, or Sheet.
+  // Counter desk: full-width top bar only — brand + desk switch.
   if (onCounter) {
     return (
-      <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-[#14110f] px-4 py-2 text-[#f7f2e8]">
+      <header className="sticky top-0 z-40 flex w-full shrink-0 items-center justify-between gap-3 border-b border-white/10 bg-[#14110f] px-4 py-2.5 text-[#f7f2e8]">
         <p className="font-heading text-base tracking-tight md:text-lg">
           DSB <span className="text-[#c9a227]">Counter</span>
         </p>

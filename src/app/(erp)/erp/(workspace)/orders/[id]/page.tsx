@@ -84,7 +84,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight">
-            Order {orderData.order_number}
+            Sale {orderData.order_number}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {orderData.customer_name ?? "No customer name"} ·{" "}
@@ -92,7 +92,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </p>
         </div>
         <Button variant="outline" asChild>
-          <Link href="/erp/orders">Back to orders</Link>
+          <Link href="/erp/orders">Back to sales</Link>
         </Button>
       </div>
 

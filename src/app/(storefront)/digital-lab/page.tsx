@@ -38,8 +38,7 @@ const SERVICES = [
 ];
 
 export default async function DigitalLabPage() {
-  const stored = await getStorefrontTheme();
-  const theme = stored === "uikit" ? "atelier" : stored;
+  const theme = await getStorefrontTheme();
 
   return (
     <StorefrontShell active="/digital-lab" theme={theme}>

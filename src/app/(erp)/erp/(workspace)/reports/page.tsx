@@ -122,7 +122,7 @@ export default async function ReportsPage() {
               {formatBtn(salesTotal)}
             </CardTitle>
             <p className="text-muted-foreground text-xs">
-              {orderCount} order(s), excl. cancelled
+              {orderCount} sale(s), excl. cancelled
             </p>
           </CardHeader>
         </Card>
@@ -182,7 +182,7 @@ export default async function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Top books by quantity sold</CardTitle>
-          <CardDescription>Last 30 days, non-cancelled orders</CardDescription>
+          <CardDescription>Last 30 days, non-cancelled sales</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

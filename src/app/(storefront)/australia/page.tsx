@@ -48,8 +48,7 @@ const STEPS = [
 ];
 
 export default async function AustraliaPage() {
-  const stored = await getStorefrontTheme();
-  const theme = stored === "uikit" ? "atelier" : stored;
+  const theme = await getStorefrontTheme();
 
   return (
     <StorefrontShell active="/australia" theme={theme}>

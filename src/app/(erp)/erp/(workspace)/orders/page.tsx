@@ -67,17 +67,17 @@ export default async function OrdersPage() {
     <div className="space-y-8">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          Orders
+          Sales
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          POS and online sales across all channels.
+          Counter and online sales across all channels.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">All orders</CardTitle>
-          <CardDescription>{list.length} order(s)</CardDescription>
+          <CardTitle className="text-base">All sales</CardTitle>
+          <CardDescription>{list.length} sale(s)</CardDescription>
         </CardHeader>
         <CardContent>
           <OrdersTable

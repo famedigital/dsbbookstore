@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import {
   DEFAULT_STOREFRONT_THEME,
@@ -5,7 +6,9 @@ import {
   type StorefrontThemeId,
 } from "@/lib/storefront/themes";
 
+/** Live theme from Settings — never serve a stale cached template. */
 export async function getStorefrontTheme(): Promise<StorefrontThemeId> {
+  await connection();
   if (!isSupabaseConfigured()) return DEFAULT_STOREFRONT_THEME;
   try {
     const supabase = await createClient();

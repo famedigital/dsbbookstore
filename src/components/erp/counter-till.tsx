@@ -424,7 +424,7 @@ export function CounterTill({
             }
           }}
           placeholder="Scan or type · Enter add · Alt+L items"
-          className="h-10 flex-1 border-[#d6cdb8] bg-white text-base shadow-none"
+          className="h-10 flex-1 border-[#d6cdb8] bg-white text-base shadow-none focus-visible:border-[#9c7a3e] focus-visible:ring-[#9c7a3e]/35"
           aria-label="Scan or search"
         />
         <Button

@@ -9,22 +9,26 @@ import {
 export function StorefrontHeader({ active }: { active?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)]/70 bg-[color:var(--sf-bg)]/95 backdrop-blur-xl sf-dzong-top">
-      <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 md:gap-4 md:px-6 md:py-3">
-        <Link
-          href="/"
-          className="shrink-0 font-heading text-lg tracking-tight text-[color:var(--sf-ink)] sm:text-xl md:text-2xl"
-        >
-          DSB
-          <span className="text-[color:var(--sf-accent)]">Books</span>
-        </Link>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-0 px-0 md:flex-row md:items-center md:gap-6 md:px-6 md:py-3">
+        <div className="flex items-center px-4 py-2.5 md:px-0 md:py-0">
+          <Link
+            href="/"
+            className="shrink-0 font-heading text-xl tracking-tight text-[color:var(--sf-ink)] md:text-2xl"
+          >
+            DSB
+            <span className="text-[color:var(--sf-accent)]">Books</span>
+          </Link>
+        </div>
 
-        {/* Same nav on all sizes — compact desktop, not a separate mobile pattern */}
-        <nav className="flex min-w-0 flex-1 items-center justify-center gap-x-2 gap-y-1 overflow-x-auto text-[0.65rem] font-medium tracking-wide text-[color:var(--sf-ink)] sm:gap-x-3 sm:text-[0.72rem] md:gap-x-4 md:text-[0.8rem] lg:gap-x-5">
+        <nav
+          className="flex min-w-0 flex-1 items-center gap-x-5 overflow-x-auto px-4 pb-3 text-[0.875rem] font-medium tracking-wide text-[color:var(--sf-ink)] [scrollbar-width:none] sm:gap-x-6 sm:text-[0.95rem] md:justify-end md:gap-x-5 md:px-0 md:pb-0 md:text-[0.8rem] lg:gap-x-6 [&::-webkit-scrollbar]:hidden"
+          aria-label="Primary"
+        >
           {PRIMARY_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`sf-link-gilt shrink-0 whitespace-nowrap ${
+              className={`sf-link-gilt shrink-0 whitespace-nowrap py-1 ${
                 active === item.href
                   ? "text-[color:var(--sf-accent)]"
                   : "text-[color:var(--sf-ink)]/80"
@@ -34,13 +38,6 @@ export function StorefrontHeader({ active }: { active?: string }) {
             </Link>
           ))}
         </nav>
-
-        <Link
-          href="/books"
-          className="sf-btn shrink-0 !px-2.5 !py-1 text-[0.65rem] sm:!px-3 sm:!py-1.5 sm:text-xs"
-        >
-          Shop
-        </Link>
       </div>
     </header>
   );

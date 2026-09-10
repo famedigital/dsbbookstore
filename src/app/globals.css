@@ -99,6 +99,17 @@
   --sidebar-ring: #4f46e5;
 }
 
+/* Counter desk — lacquer / gilt, not UI Kit purple */
+[data-desk="counter"] {
+  --primary: #5c241c;
+  --primary-foreground: #f7f2e8;
+  --accent: #5c241c;
+  --accent-foreground: #f7f2e8;
+  --ring: #9c7a3e;
+  --secondary: #ebe4d6;
+  --secondary-foreground: #14110f;
+}
+
 /* Booksaw */
 [data-theme="booksaw"] {
   --sf-bg: #f3f2ec;
@@ -255,8 +266,24 @@
 .sf-title {
   font-family: var(--font-heading), Georgia, serif;
   color: var(--sf-ink);
+  font-size: clamp(1.35rem, 3.6vw, 2.75rem);
   line-height: 1.12;
   letter-spacing: -0.02em;
+}
+
+/* Compact-desktop density on small screens — same composition, tighter scale */
+@media (max-width: 767px) {
+  body {
+    line-height: 1.5;
+  }
+
+  [data-theme="atelier"] {
+    --sf-card-shadow: 0 10px 28px rgba(20, 17, 15, 0.1);
+  }
+
+  [data-theme="atelier"] .sf-textile::before {
+    animation: none;
+  }
 }
 
 .sf-link-gilt {
