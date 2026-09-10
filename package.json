@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "echo 'Run supabase/migrations/*.sql in Supabase SQL editor or psql'",
-    "db:seed": "node scripts/seed-sample-books.mjs && node scripts/seed-dsb-publication-titles.mjs"
+    "db:seed": "node scripts/seed-sample-books.mjs && node scripts/seed-dsb-publication-titles.mjs",
+    "covers:link": "node scripts/link-openlibrary-covers.mjs",
+    "media:sync": "node scripts/sync-site-media-cloudinary.mjs --delete-samples"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

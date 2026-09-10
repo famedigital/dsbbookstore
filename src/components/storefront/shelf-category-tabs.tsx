@@ -15,7 +15,7 @@ export type ShelfCategory = {
 
 export type ShelfBook = Pick<
   Book,
-  "id" | "title" | "slug" | "price_btn" | "cover_public_id"
+  "id" | "title" | "slug" | "price_btn" | "cover_public_id" | "isbn_13" | "barcode"
 > & {
   categoryIds: string[];
 };
@@ -92,6 +92,8 @@ export function ShelfCategoryTabs({
                 <div className="sf-card mx-auto aspect-[2/3] w-full max-w-[200px] overflow-hidden p-2">
                   <BookCover
                     publicId={book.cover_public_id}
+                    isbn={book.isbn_13}
+                    barcode={book.barcode}
                     alt={book.title}
                     width={320}
                     height={480}

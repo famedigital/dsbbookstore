@@ -4,6 +4,10 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
 import {
+  FeaturedHeroCarousel,
+  type HeroSlide,
+} from "@/components/storefront/featured-hero-carousel";
+import {
   ShelfCategoryTabs,
   type ShelfBook,
   type ShelfCategory,
@@ -16,7 +20,7 @@ import type { Book } from "@/types/erp";
 export default async function HomePage() {
   const theme = await getStorefrontTheme();
   let featured: Book[] = [];
-  let spotlight: Book | null = null;
+  let heroSlides: HeroSlide[] = [];
   let settings: { store_name: string; opening_hours: string | null } | null =
     null;
   let shelfCategories: ShelfCategory[] = [];
@@ -50,7 +54,7 @@ export default async function HomePage() {
       supabase
         .from("books")
         .select(
-          "id, title, slug, price_btn, cover_public_id, book_categories(category_id)"
+          "id, title, slug, price_btn, cover_public_id, isbn_13, barcode, book_categories(category_id)"
         )
         .eq("is_published", true)
         .eq("product_kind", "book")
@@ -72,7 +76,6 @@ export default async function HomePage() {
     }
 
     featured = list.slice(0, 4);
-    spotlight = list.find((b) => b.is_featured) ?? list[0] ?? null;
     settings = store;
 
     const allCats = (cats ?? []) as ShelfCategory[];
@@ -83,6 +86,8 @@ export default async function HomePage() {
         slug: string;
         price_btn: number;
         cover_public_id: string | null;
+        isbn_13: string | null;
+        barcode: string | null;
         book_categories: { category_id: string }[] | null;
       }>
     ).map((b) => ({
@@ -91,65 +96,77 @@ export default async function HomePage() {
       slug: b.slug,
       price_btn: b.price_btn,
       cover_public_id: b.cover_public_id,
+      isbn_13: b.isbn_13,
+      barcode: b.barcode,
       categoryIds: (b.book_categories ?? []).map((c) => c.category_id),
     }));
 
-    // Pull a few titles per named category so tabs aren't empty
     const namedCats = allCats.filter((c) => c.slug !== "general-interest");
     const byCat = await Promise.all(
       namedCats.map(async (c) => {
         const { data } = await supabase
           .from("book_categories")
           .select(
-            "books(id, title, slug, price_btn, cover_public_id, is_published, product_kind)"
+            "books(id, title, slug, subtitle, description, price_btn, cover_public_id, isbn_13, barcode, is_published, product_kind)"
           )
           .eq("category_id", c.id)
           .limit(16);
+        type CatBook = {
+          id: string;
+          title: string;
+          slug: string;
+          subtitle?: string | null;
+          description?: string | null;
+          price_btn: number;
+          cover_public_id: string | null;
+          isbn_13?: string | null;
+          barcode?: string | null;
+          is_published?: boolean;
+          product_kind?: string;
+        };
+        const booksInCat = (
+          (data ?? []) as unknown as Array<{
+            books: CatBook | CatBook[] | null;
+          }>
+        )
+          .flatMap((row) => {
+            const b = row.books;
+            if (!b) return [];
+            return Array.isArray(b) ? b : [b];
+          })
+          .filter(
+            (b) =>
+              b.is_published !== false &&
+              (!b.product_kind || b.product_kind === "book")
+          );
+
         return {
-          catId: c.id,
-          books: (
-            (data ?? []) as unknown as Array<{
-              books:
-                | {
-                    id: string;
-                    title: string;
-                    slug: string;
-                    price_btn: number;
-                    cover_public_id: string | null;
-                    is_published?: boolean;
-                    product_kind?: string;
-                  }
-                | {
-                    id: string;
-                    title: string;
-                    slug: string;
-                    price_btn: number;
-                    cover_public_id: string | null;
-                    is_published?: boolean;
-                    product_kind?: string;
-                  }[]
-                | null;
-            }>
-          )
-            .flatMap((row) => {
-              const b = row.books;
-              if (!b) return [];
-              return Array.isArray(b) ? b : [b];
-            })
-            .filter(
-              (b) =>
-                b.is_published !== false &&
-                (!b.product_kind || b.product_kind === "book")
-            )
-            .slice(0, 8)
-            .map((b) => ({
-              id: b.id,
-              title: b.title,
-              slug: b.slug,
-              price_btn: b.price_btn,
-              cover_public_id: b.cover_public_id,
-              categoryIds: [c.id],
-            })),
+          cat: c,
+          books: booksInCat.slice(0, 8).map((b) => ({
+            id: b.id,
+            title: b.title,
+            slug: b.slug,
+            price_btn: b.price_btn,
+            cover_public_id: b.cover_public_id,
+            isbn_13: b.isbn_13 ?? null,
+            barcode: b.barcode ?? null,
+            categoryIds: [c.id],
+          })),
+          heroCandidate: booksInCat[0]
+            ? ({
+                id: booksInCat[0].id,
+                title: booksInCat[0].title,
+                slug: booksInCat[0].slug,
+                subtitle: booksInCat[0].subtitle ?? null,
+                description: booksInCat[0].description ?? null,
+                price_btn: booksInCat[0].price_btn,
+                cover_public_id: booksInCat[0].cover_public_id,
+                isbn_13: booksInCat[0].isbn_13 ?? null,
+                barcode: booksInCat[0].barcode ?? null,
+                categoryName: c.name,
+                categorySlug: c.slug,
+              } satisfies HeroSlide)
+            : null,
         };
       })
     );
@@ -173,79 +190,49 @@ export default async function HomePage() {
 
     const used = new Set(shelfBooks.flatMap((b) => b.categoryIds));
     shelfCategories = namedCats.filter(
-      (c) => used.has(c.id) && (byCat.find((g) => g.catId === c.id)?.books.length ?? 0) > 0
+      (c) =>
+        used.has(c.id) &&
+        (byCat.find((g) => g.cat.id === c.id)?.books.length ?? 0) > 0
     );
     const general = allCats.find((c) => c.slug === "general-interest");
     if (general) {
       shelfCategories = [...shelfCategories, general];
     }
-  }
 
-  const heroTitle = spotlight?.title ?? "From the Chang Lam shelves";
-  const heroDescription =
-    (spotlight?.subtitle ||
-      spotlight?.description?.slice(0, 160) ||
-      "DSB Publication titles and trusted reads — browse live stock from Bhutan's oldest bookstore.") +
-    (spotlight?.description && spotlight.description.length > 160 ? "…" : "");
+    const seenHero = new Set<string>();
+    heroSlides = byCat
+      .map((g) => g.heroCandidate)
+      .filter((s): s is HeroSlide => {
+        if (!s || seenHero.has(s.id)) return false;
+        seenHero.add(s.id);
+        return true;
+      })
+      .slice(0, 10);
+
+    if (heroSlides.length === 0 && list[0]) {
+      const b = list[0];
+      heroSlides = [
+        {
+          id: b.id,
+          title: b.title,
+          slug: b.slug,
+          subtitle: b.subtitle,
+          description: b.description,
+          price_btn: b.price_btn,
+          cover_public_id: b.cover_public_id,
+          isbn_13: b.isbn_13,
+          barcode: b.barcode,
+          categoryName: "Featured",
+          categorySlug: "",
+        },
+      ];
+    }
+  }
 
   return (
     <StorefrontShell active="/" theme={theme}>
-      {spotlight ? (
-        <section className="sf-featured-hero sf-textile sf-dzong-top">
-          <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-5 md:grid-cols-2 md:items-center md:gap-x-16 md:gap-y-0">
-              {/* Copy + CTAs */}
-              <div className="sf-rise min-w-0 self-center">
-                <p className="sf-eyebrow">Featured title</p>
-                <div className="sf-featured-hero__gilt" aria-hidden />
-
-                <h1 className="sf-featured-hero__title mt-4 hidden md:block">
-                  {heroTitle}
-                </h1>
-                <p className="mt-4 hidden max-w-lg text-[0.95rem] leading-relaxed text-[color:var(--sf-muted)] md:block md:text-base md:leading-7">
-                  {heroDescription}
-                </p>
-
-                <p className="sf-featured-hero__price mt-1 md:mt-7">
-                  {formatBtn(spotlight.price_btn)}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2.5 md:mt-7 md:gap-3">
-                  <Link
-                    href={`/books/${spotlight.slug}`}
-                    className="sf-btn sf-featured-hero__btn"
-                  >
-                    View book
-                  </Link>
-                  <Link href="/books" className="sf-btn-pine sf-featured-hero__btn">
-                    All books
-                  </Link>
-                </div>
-              </div>
-
-              {/* Cover — larger presence, no inset card chrome */}
-              <div className="sf-featured-hero__cover justify-self-end md:justify-self-center">
-                <div className="sf-featured-hero__cover-stage">
-                  <BookCover
-                    publicId={spotlight.cover_public_id}
-                    alt={spotlight.title}
-                    width={640}
-                    height={960}
-                    priority
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </div>
-
-              {/* Mobile title row */}
-              <div className="col-span-2 min-w-0 md:hidden">
-                <h1 className="sf-featured-hero__title">{heroTitle}</h1>
-                <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-[color:var(--sf-muted)]">
-                  {heroDescription}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+      {heroSlides.length > 0 ? (
+        <FeaturedHeroCarousel slides={heroSlides} />
       ) : null}
 
       <section className="bg-[color:var(--sf-bg)] py-7 md:py-18">
@@ -277,6 +264,8 @@ export default async function HomePage() {
                     <div className="aspect-[2/3] overflow-hidden bg-[color:var(--sf-bg)]">
                       <BookCover
                         publicId={book.cover_public_id}
+                        isbn={book.isbn_13}
+                        barcode={book.barcode}
                         alt={book.title}
                         width={320}
                         height={480}
@@ -319,8 +308,7 @@ export default async function HomePage() {
           <h2 className="sf-title mt-2">Story, schools &amp; partnerships</h2>
           <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {INSTITUTIONAL_SECTIONS.filter(
-              (s) =>
-                s.href !== "/australia" && s.href !== "/digital-lab"
+              (s) => s.href !== "/australia" && s.href !== "/digital-lab"
             )
               .slice(0, 4)
               .map((s) => (

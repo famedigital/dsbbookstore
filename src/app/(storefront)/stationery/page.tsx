@@ -161,6 +161,8 @@ export default async function StationeryPage({
                   <div className="sf-card sf-card-hover overflow-hidden p-1.5 md:p-2">
                     <BookCover
                       publicId={item.cover_public_id}
+                      isbn={item.isbn_13}
+                      barcode={item.barcode}
                       alt={item.title}
                       width={400}
                       height={400}

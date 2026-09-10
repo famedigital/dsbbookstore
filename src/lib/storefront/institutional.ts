@@ -16,10 +16,10 @@ export const INSTITUTIONAL_SECTIONS: InstitutionalSection[] = [
     eyebrow: "Our founder & family",
     title: "Our Founder and Family Story",
     summary:
-      "The people and values behind Bhutan’s oldest bookstore on Chang Lam.",
+      "Bhutan’s oldest bookstore on Chang Lam — family stewardship, DSB Publications, and decades of shelves at Jojo’s.",
     body: [
-      "DSB Books grew from a family commitment to making knowledge available in Thimphu and beyond. From the shop floor at Jojo’s Shopping Complex to DSB Publication titles on the shelf, the bookstore remains a place where readers, students, and visitors meet Bhutanese publishing.",
-      "This page will hold the founder’s story, family stewardship of the store, and the journey from a neighbourhood bookshop into a bridge for culture, education, and digital knowledge.",
+      "DSB Books is the public face of DSB Enterprises, rooted in Thimphu since the early 1990s. Travel writers still call it the country’s oldest bookstore — Buddhism and Bhutan titles, textbooks, fiction, magazines, and a staff who know the stock.",
+      "Proprietor B.P. Bhattarai and the family behind the shop have kept reading accessible on Chang Lam while growing DSB Publication, school supply, and partnerships that now reach Australia and the Digital Knowledge Lab — without leaving Jojo’s Shopping Complex.",
     ],
   },
   {

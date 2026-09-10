@@ -3,10 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import { CldImage } from "next-cloudinary";
-import { buildCoverUrl } from "@/lib/cloudinary-url";
+import {
+  buildCoverUrl,
+  openLibraryCoverUrl,
+  resolveCoverSrc,
+} from "@/lib/cloudinary-url";
 
 type Props = {
   publicId?: string | null;
+  /** ISBN-13 when known — free Open Library fallback */
+  isbn?: string | null;
+  /** UPCEAN / barcode — used when ISBN missing */
+  barcode?: string | null;
   alt: string;
   width: number;
   height: number;
@@ -21,10 +29,11 @@ function Placeholder({
   height,
   className,
 }: Pick<Props, "alt" | "width" | "height" | "className">) {
+  const fills = className?.includes("absolute") || className?.includes("h-full");
   return (
     <div
-      className={`flex items-center justify-center bg-[linear-gradient(145deg,#1a1510_0%,#5c241c_55%,#9c7a3e_100%)] text-[#f7f2e8]/90 ${className ?? ""}`}
-      style={{ aspectRatio: `${width}/${height}` }}
+      className={`flex items-center justify-center bg-[linear-gradient(160deg,#0f172a_0%,#1e3a5f_50%,#0284c7_100%)] text-white/90 ${className ?? ""}`}
+      style={fills ? undefined : { aspectRatio: `${width}/${height}` }}
       aria-label={alt}
     >
       <span className="px-3 text-center text-[0.65rem] font-medium tracking-[0.2em] uppercase">
@@ -49,9 +58,16 @@ function localFallbackSrc(src: string) {
   return null;
 }
 
-/** Cover image with local/remote/Cloudinary + jpg↔svg fallback. */
+/**
+ * Cover resolver (free-tier order):
+ * 1. Stored publicId (Cloudinary id, /local, or https URL)
+ * 2. Open Library by ISBN/barcode (no storage cost)
+ * 3. Soft DSB placeholder
+ */
 export function BookCover({
   publicId,
+  isbn,
+  barcode,
   alt,
   width,
   height,
@@ -60,10 +76,13 @@ export function BookCover({
   priority,
 }: Props) {
   const frame = `sf-cover object-cover ${className ?? ""}`;
-  const [src, setSrc] = useState(publicId ?? "");
+  const initial =
+    resolveCoverSrc({ publicId, isbn, barcode, width }) || publicId || "";
+  const [src, setSrc] = useState(initial);
   const [failed, setFailed] = useState(false);
+  const [triedOl, setTriedOl] = useState(false);
 
-  if (!publicId || failed) {
+  if (!src || failed) {
     return (
       <Placeholder alt={alt} width={width} height={height} className={frame} />
     );
@@ -83,7 +102,14 @@ export function BookCover({
           onError={() => {
             const next = localFallbackSrc(src);
             if (next && next !== src) setSrc(next);
-            else setFailed(true);
+            else if (!triedOl) {
+              const ol =
+                openLibraryCoverUrl(isbn, "M") ||
+                openLibraryCoverUrl(barcode, "M");
+              setTriedOl(true);
+              if (ol) setSrc(ol);
+              else setFailed(true);
+            } else setFailed(true);
           }}
         />
       );
@@ -98,11 +124,24 @@ export function BookCover({
         sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
         className={frame}
         priority={priority}
-        unoptimized={src.startsWith("/")}
+        unoptimized={src.startsWith("/") || src.includes("openlibrary.org")}
         onError={() => {
           const next = localFallbackSrc(src);
-          if (next && next !== src) setSrc(next);
-          else setFailed(true);
+          if (next && next !== src) {
+            setSrc(next);
+            return;
+          }
+          if (!triedOl) {
+            const ol =
+              openLibraryCoverUrl(isbn, "M") ||
+              openLibraryCoverUrl(barcode, "M");
+            setTriedOl(true);
+            if (ol && ol !== src) {
+              setSrc(ol);
+              return;
+            }
+          }
+          setFailed(true);
         }}
       />
     );
@@ -113,7 +152,7 @@ export function BookCover({
   if (cloudName) {
     return (
       <CldImage
-        src={publicId}
+        src={src}
         alt={alt}
         width={width}
         height={height}
@@ -124,12 +163,24 @@ export function BookCover({
         sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
         className={frame}
         priority={priority}
-        onError={() => setFailed(true)}
+        onError={() => {
+          if (!triedOl) {
+            const ol =
+              openLibraryCoverUrl(isbn, "M") ||
+              openLibraryCoverUrl(barcode, "M");
+            setTriedOl(true);
+            if (ol) {
+              setSrc(ol);
+              return;
+            }
+          }
+          setFailed(true);
+        }}
       />
     );
   }
 
-  const fallbackUrl = buildCoverUrl(publicId, width);
+  const fallbackUrl = buildCoverUrl(src, width);
   if (fallbackUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

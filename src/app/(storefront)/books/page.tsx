@@ -1,222 +1,203 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
-import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
+import { JsonLd } from "@/components/storefront/json-ld";
+import { CatalogueFilterBar } from "@/components/storefront/catalogue-filters";
+import { CatalogueResults } from "@/components/storefront/catalogue-results";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
-import { formatBtn, availabilityLabel } from "@/lib/erp/format";
-import type { AvailabilityStatus, Book } from "@/types/erp";
+import {
+  booksCollectionJsonLd,
+  faqJsonLd,
+  localBusinessJsonLd,
+  SITE_URL,
+} from "@/lib/storefront/seo";
+import {
+  CATALOGUE_PAGE_SIZE,
+  fetchCataloguePage,
+  resolveCatalogueSort,
+  type CatalogueBook,
+} from "@/lib/storefront/catalogue-query";
+import type { Book } from "@/types/erp";
 
-export const metadata = { title: "Books" };
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; category?: string; page?: string }>;
+}): Promise<Metadata> {
+  const { q, category, page } = await searchParams;
+  const pageNum = Math.max(1, Number(page) || 1);
+  let title = "Buy Books in Thimphu";
+  let description =
+    "Browse thousands of titles at DSB Books on Chang Lam — live stock, Nu. prices, pickup in Thimphu.";
 
-const FORMATS = ["paperback", "hardcover", "ebook", "audiobook"] as const;
-const AVAILABILITY: AvailabilityStatus[] = [
-  "in_stock",
-  "low_stock",
-  "out_of_stock",
-  "coming_soon",
-  "enquire_only",
-];
-const SORTS = {
-  newest: { column: "created_at", ascending: false },
-  title: { column: "title", ascending: true },
-  price: { column: "price_btn", ascending: true },
-} as const;
+  if (q?.trim()) {
+    title = `Search “${q.trim()}”`;
+    description = `Find “${q.trim()}” at DSB Books Thimphu — check price and shelf availability.`;
+  } else if (category?.trim()) {
+    title = category.replace(/-/g, " ");
+    description = `Shop ${title} books at DSB Books, Chang Lam, Thimphu.`;
+  }
 
-const selectClass =
-  "h-10 shrink-0 border-0 border-r border-[color:var(--sf-line)] bg-transparent px-2.5 text-xs text-[color:var(--sf-ink)] outline-none focus:bg-[color:var(--sf-bg)] md:px-3 md:text-sm";
+  const url = new URL(`${SITE_URL}/books`);
+  if (q) url.searchParams.set("q", q);
+  if (category) url.searchParams.set("category", category);
+  if (pageNum > 1) url.searchParams.set("page", String(pageNum));
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url.toString() },
+    openGraph: {
+      title: `${title} · DSB Books`,
+      description,
+      url: url.toString(),
+      type: "website",
+      locale: "en_BT",
+      siteName: "DSB Books",
+    },
+    other: {
+      "geo.region": "BT-15",
+      "geo.placename": "Thimphu",
+      "geo.position": "27.4712;89.6339",
+      ICBM: "27.4712, 89.6339",
+    },
+  };
+}
 
 export default async function BooksPage({
   searchParams,
 }: {
   searchParams: Promise<{
     q?: string;
-    format?: string;
+    category?: string;
     availability?: string;
     sort?: string;
+    page?: string;
   }>;
 }) {
-  const { q, format, availability, sort } = await searchParams;
-  const sortKey = sort && sort in SORTS ? (sort as keyof typeof SORTS) : "title";
+  const { q, category, availability, sort, page: pageRaw } = await searchParams;
+  const page = Math.max(1, Number(pageRaw) || 1);
+  const sortKey = resolveCatalogueSort(sort);
   const theme = await getStorefrontTheme();
-  let books: Book[] = [];
+
+  let books: CatalogueBook[] = [];
+  let total = 0;
+  let categories: { id: string; name: string; slug: string }[] = [];
+  let storeName = "DSB Books";
+  let phone: string | null = null;
+  let openingHours: string | null = null;
 
   if (isSupabaseConfigured()) {
     const supabase = await createClient();
-    const { column, ascending } = SORTS[sortKey];
-    let query = supabase
-      .from("books")
-      .select("*")
-      .eq("is_published", true)
-      .eq("product_kind", "book")
-      .order(column, { ascending });
 
-    if (q?.trim()) {
-      query = query.or(
-        `title.ilike.%${q.trim()}%,isbn_13.ilike.%${q.trim()}%,subtitle.ilike.%${q.trim()}%`
-      );
+    const [{ data: cats }, { data: store }] = await Promise.all([
+      supabase
+        .from("categories")
+        .select("id, name, slug, sort_order")
+        .order("sort_order")
+        .order("name"),
+      supabase
+        .from("store_settings")
+        .select("store_name, phone, opening_hours")
+        .eq("id", 1)
+        .maybeSingle(),
+    ]);
+
+    const allCats = (cats ?? []) as {
+      id: string;
+      name: string;
+      slug: string;
+    }[];
+    categories = allCats.filter((c) => c.slug !== "general-interest");
+    const general = allCats.find((c) => c.slug === "general-interest");
+    if (general) categories = [...categories, general];
+
+    if (store) {
+      storeName = store.store_name || storeName;
+      phone = store.phone;
+      openingHours = store.opening_hours;
     }
 
-    if (format?.trim()) {
-      query = query.eq("format", format.trim());
-    }
-
-    if (
-      availability?.trim() &&
-      AVAILABILITY.includes(availability as AvailabilityStatus)
-    ) {
-      query = query.eq("availability_status", availability.trim());
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      // Column missing: show published titles until product_kind migration is applied.
-      let fallback = supabase
-        .from("books")
-        .select("*")
-        .eq("is_published", true)
-        .order(column, { ascending });
-      if (q?.trim()) {
-        fallback = fallback.or(
-          `title.ilike.%${q.trim()}%,isbn_13.ilike.%${q.trim()}%,subtitle.ilike.%${q.trim()}%`
-        );
-      }
-      const { data: rows } = await fallback;
-      books = (rows as Book[]) ?? [];
-    } else {
-      books = (data as Book[]) ?? [];
-    }
+    const result = await fetchCataloguePage(
+      supabase,
+      {
+        q,
+        category,
+        availability,
+        sort: sortKey,
+        page,
+      },
+      categories
+    );
+    books = result.books;
+    total = result.total;
   }
 
-  const hasFilters = Boolean(q?.trim() || format?.trim() || availability?.trim());
+  const activeCat = categories.find((c) => c.slug === category);
+
+  const faqs = [
+    {
+      question: "Where can I buy books from DSB Books in Thimphu?",
+      answer:
+        "Visit DSB Books at Jojo's Shopping Complex on Chang Lam, Thimphu, or browse live stock online and enquire to reserve a title for pickup.",
+    },
+    {
+      question: "How do I find a book in a large catalogue?",
+      answer:
+        "Search by title, author, ISBN or barcode, then use the category and stock chips. Scroll or tap Load more to keep browsing — default Browse order walks the full shelf, not the same few titles.",
+    },
+    {
+      question: "Are website prices the same as in the shop?",
+      answer:
+        "Yes — prices are in Bhutanese Ngultrum (Nu.) and stock status comes from our Thimphu inventory.",
+    },
+  ];
 
   return (
-    <StorefrontShell active="/books" theme={theme}>
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-14">
-        <p className="sf-eyebrow">Books</p>
-        <h1 className="sf-title mt-2 text-2xl md:mt-3 md:text-4xl">Books</h1>
-        <p className="mt-2 max-w-xl text-sm text-[color:var(--sf-muted)] md:mt-3">
-          Search DSB Publication titles and check live shelf availability in
-          Thimphu. For pens and paper see{" "}
-          <Link href="/stationery" className="text-[color:var(--sf-accent)] hover:underline">
-            Stationery
-          </Link>
-          .
-        </p>
+    <StorefrontShell
+      active="/books"
+      theme={theme}
+      compactFooter
+      searchQuery={q}
+    >
+      <JsonLd
+        data={localBusinessJsonLd({
+          name: storeName,
+          phone,
+          openingHours,
+        })}
+      />
+      <JsonLd
+        data={booksCollectionJsonLd(books as Book[], {
+          name: activeCat
+            ? `${activeCat.name} books · DSB Books`
+            : "Books catalogue · DSB Books Thimphu",
+          url: `${SITE_URL}/books`,
+          page,
+        })}
+      />
+      <JsonLd data={faqJsonLd(faqs)} />
 
-        <form className="mt-5 md:mt-8">
-          <div className="flex overflow-x-auto rounded-[var(--sf-btn-radius)] border border-[color:var(--sf-line)] bg-[color:var(--sf-surface)] shadow-[var(--sf-card-shadow)]">
-            <select
-              name="format"
-              defaultValue={format ?? ""}
-              aria-label="Format"
-              className={`${selectClass} min-w-[7.5rem] rounded-l-[var(--sf-btn-radius)]`}
-            >
-              <option value="">All formats</option>
-              {FORMATS.map((f) => (
-                <option key={f} value={f}>
-                  {f.charAt(0).toUpperCase() + f.slice(1)}
-                </option>
-              ))}
-            </select>
+      <CatalogueFilterBar
+        categories={categories}
+        q={q}
+        category={category}
+        availability={availability}
+        sort={sortKey}
+        total={total}
+      />
 
-            <select
-              name="availability"
-              defaultValue={availability ?? ""}
-              aria-label="Availability"
-              className={`${selectClass} min-w-[8rem]`}
-            >
-              <option value="">Any status</option>
-              {AVAILABILITY.map((a) => (
-                <option key={a} value={a}>
-                  {availabilityLabel(a)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              name="sort"
-              defaultValue={sortKey}
-              aria-label="Sort"
-              className={`${selectClass} min-w-[7rem]`}
-            >
-              <option value="newest">Newest</option>
-              <option value="title">Title</option>
-              <option value="price">Price</option>
-            </select>
-
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="Title, ISBN, or keyword"
-              aria-label="Search catalogue"
-              className="h-10 min-w-[10rem] flex-1 border-0 bg-transparent px-3 text-sm text-[color:var(--sf-ink)] outline-none placeholder:text-[color:var(--sf-muted)]"
-            />
-
-            <button
-              type="submit"
-              className="sf-btn shrink-0 !rounded-none !rounded-r-[var(--sf-btn-radius)] !px-4"
-            >
-              Search
-            </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[color:var(--sf-muted)]">
-            <p>
-              {isSupabaseConfigured()
-                ? `${books.length} result${books.length === 1 ? "" : "s"}`
-                : "Catalogue unavailable"}
-              {q?.trim() ? (
-                <span>
-                  {" "}
-                  for &ldquo;{q.trim()}&rdquo;
-                </span>
-              ) : null}
-            </p>
-            {hasFilters ? (
-              <Link
-                href="/books"
-                className="font-medium text-[color:var(--sf-accent)] hover:underline"
-              >
-                Clear filters
-              </Link>
-            ) : null}
-          </div>
-        </form>
-
-        {!isSupabaseConfigured() ? (
-          <p className="mt-8 text-sm text-[color:var(--sf-muted)]">
-            Supabase is not connected — catalogue unavailable.
-          </p>
-        ) : books.length === 0 ? (
-          <p className="mt-8 text-sm text-[color:var(--sf-muted)]">No books found.</p>
-        ) : (
-          <ul className="mt-6 grid grid-cols-2 gap-x-3 gap-y-8 md:mt-8 md:gap-x-6 md:gap-y-10 lg:grid-cols-4">
-            {books.map((book) => (
-              <li key={book.id} className="group">
-                <Link href={`/books/${book.slug}`} className="block">
-                  <div className="sf-card sf-card-hover overflow-hidden p-1.5 md:p-2">
-                    <BookCover
-                      publicId={book.cover_public_id}
-                      alt={book.title}
-                      width={400}
-                      height={600}
-                      className="aspect-[2/3] w-full rounded-[calc(var(--sf-radius)-0.35rem)] object-cover transition duration-500 group-hover:scale-[1.03]"
-                    />
-                  </div>
-                  <p className="mt-2 text-[0.6rem] font-semibold tracking-[0.18em] text-[color:var(--sf-accent)] uppercase md:mt-3 md:text-[0.65rem]">
-                    {availabilityLabel(book.availability_status)}
-                  </p>
-                  <h2 className="mt-1 font-display text-sm leading-snug group-hover:text-[color:var(--sf-accent)] md:text-lg">
-                    {book.title}
-                  </h2>
-                  <p className="mt-1 text-sm font-semibold tracking-wide text-[color:var(--sf-ink)]">
-                    {formatBtn(book.price_btn)}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="mx-auto w-full max-w-6xl px-3 py-3 sm:px-4 md:px-6 md:py-4">
+        <CatalogueResults
+          initialBooks={books}
+          initialTotal={total}
+          initialPage={page}
+          pageSize={CATALOGUE_PAGE_SIZE}
+          q={q}
+          category={category}
+          availability={availability}
+          sort={sortKey}
+        />
       </div>
     </StorefrontShell>
   );

@@ -6,24 +6,36 @@ import {
   FOOTER_ABOUT,
 } from "@/lib/storefront/institutional";
 import { DsbLogo } from "@/components/brand/dsb-logo";
+import { HeaderSearch } from "@/components/storefront/header-search";
 
-export function StorefrontHeader({ active }: { active?: string }) {
+export function StorefrontHeader({
+  active,
+  searchQuery,
+}: {
+  active?: string;
+  searchQuery?: string;
+}) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)]/70 bg-[color:var(--sf-bg)]/95 backdrop-blur-xl sf-dzong-top">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-0 px-0 md:flex-row md:items-center md:gap-6 md:px-6 md:py-3">
-        <div className="flex items-center px-4 py-2.5 md:px-0 md:py-0">
-          <DsbLogo variant="lacquer" size={40} />
+    <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)]/70 bg-[color:var(--sf-bg)]/95 backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-2.5 px-3 py-2 sm:gap-3 sm:px-4 md:gap-4 md:px-6 md:py-2.5">
+        <div className="shrink-0">
+          <DsbLogo variant="lacquer" size={48} />
         </div>
 
+        <HeaderSearch
+          defaultQuery={searchQuery}
+          className="md:max-w-md lg:max-w-lg"
+        />
+
         <nav
-          className="flex min-w-0 flex-1 items-center gap-x-5 overflow-x-auto px-4 pb-3 text-[0.875rem] font-medium tracking-wide text-[color:var(--sf-ink)] [scrollbar-width:none] sm:gap-x-6 sm:text-[0.95rem] md:justify-end md:gap-x-5 md:px-0 md:pb-0 md:text-[0.8rem] lg:gap-x-6 [&::-webkit-scrollbar]:hidden"
+          className="hidden min-w-0 items-center gap-x-3 overflow-x-auto text-[0.78rem] font-medium tracking-wide text-[color:var(--sf-ink)] [scrollbar-width:none] sm:flex md:gap-x-3.5 lg:gap-x-4 [&::-webkit-scrollbar]:hidden"
           aria-label="Primary"
         >
           {PRIMARY_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`sf-link-gilt shrink-0 whitespace-nowrap py-1 ${
+              className={`sf-link-gilt shrink-0 whitespace-nowrap py-0.5 ${
                 active === item.href
                   ? "text-[color:var(--sf-accent)]"
                   : "text-[color:var(--sf-ink)]/80"
@@ -34,11 +46,58 @@ export function StorefrontHeader({ active }: { active?: string }) {
           ))}
         </nav>
       </div>
+      <nav
+        className="flex min-w-0 items-center gap-x-3.5 overflow-x-auto border-t border-[color:var(--sf-line)]/50 px-3 py-1.5 text-[0.75rem] font-medium sm:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        aria-label="Primary mobile"
+      >
+        {PRIMARY_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`sf-link-gilt shrink-0 whitespace-nowrap ${
+              active === item.href
+                ? "text-[color:var(--sf-accent)]"
+                : "text-[color:var(--sf-ink)]/80"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }
 
-export function StorefrontFooter() {
+export function StorefrontFooter({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <footer className="mt-auto border-t border-[color:var(--sf-line)] bg-[color:var(--sf-night,#1a2430)] text-[color:var(--sf-ivory,#f7f2e8)]">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-3 text-xs text-white/55 sm:px-4 md:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <DsbLogo variant="white" size={28} />
+            <span className="truncate">
+              Chang Lam · Jojo&apos;s · 02 326275
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <Link href="/visit" className="hover:text-[color:var(--sf-gilt,#9c7a3e)]">
+              Visit
+            </Link>
+            <Link href="/about" className="hover:text-[color:var(--sf-gilt,#9c7a3e)]">
+              About
+            </Link>
+            <Link href="/enquiry" className="hover:text-[color:var(--sf-gilt,#9c7a3e)]">
+              Enquire
+            </Link>
+            <Link href="/erp/login" className="hover:text-[color:var(--sf-gilt,#9c7a3e)]">
+              Staff
+            </Link>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer className="sf-textile mt-auto bg-[color:var(--sf-night,#1a2430)] text-[color:var(--sf-ivory,#f7f2e8)] sf-dzong-top">
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:grid-cols-4 md:gap-10 md:px-6 md:py-14">
@@ -115,19 +174,23 @@ export function StorefrontShell({
   children,
   active,
   theme = "atelier",
+  compactFooter = false,
+  searchQuery,
 }: {
   children: React.ReactNode;
   active?: string;
   theme?: StorefrontThemeId;
+  compactFooter?: boolean;
+  searchQuery?: string;
 }) {
   return (
     <div
       data-theme={theme}
       className="sf-paper flex min-h-screen flex-col text-[color:var(--sf-ink)] selection:bg-[color:var(--sf-accent)] selection:text-white"
     >
-      <StorefrontHeader active={active} />
+      <StorefrontHeader active={active} searchQuery={searchQuery} />
       <main className="flex-1">{children}</main>
-      <StorefrontFooter />
+      <StorefrontFooter compact={compactFooter} />
     </div>
   );
 }

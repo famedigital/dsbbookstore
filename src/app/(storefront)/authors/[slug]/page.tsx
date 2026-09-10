@@ -99,6 +99,8 @@ export default async function AuthorDetailPage({
                   <div className="overflow-hidden bg-[color:var(--dsb-stone)]">
                     <BookCover
                       publicId={book.cover_public_id}
+                      isbn={book.isbn_13}
+                      barcode={book.barcode}
                       alt={book.title}
                       width={400}
                       height={600}

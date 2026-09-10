@@ -23,9 +23,15 @@ export function DsbLogo({
   const src = light
     ? "/brand/dsb-seal-white.png"
     : "/brand/dsb-seal-navy.png";
+  const wordClass =
+    size >= 48
+      ? "text-2xl md:text-[1.75rem]"
+      : size >= 40
+        ? "text-xl md:text-2xl"
+        : "text-lg md:text-xl";
 
   const inner = (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
+    <span className={cn("inline-flex items-center gap-3", className)}>
       <Image
         src={src}
         alt="DSB Enterprises"
@@ -38,7 +44,8 @@ export function DsbLogo({
       {withWordmark ? (
         <span
           className={cn(
-            "font-heading text-xl tracking-tight md:text-2xl",
+            "font-heading tracking-tight",
+            wordClass,
             light ? "text-[#f7f2e8]" : "text-[color:var(--sf-ink,#0f172a)]"
           )}
         >

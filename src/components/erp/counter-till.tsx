@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { History, Minus, Plus, Search, Trash2, X } from "lucide-react";
 import { createPosSale } from "@/lib/erp/actions";
+import { searchProducts } from "@/lib/erp/product-search";
 import { formatBtn } from "@/lib/erp/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,14 +42,27 @@ type CartLine = {
   stockQty: number;
 };
 
+function hitToPos(hit: Awaited<ReturnType<typeof searchProducts>>[number]): PosItem {
+  return {
+    id: hit.id,
+    title: hit.title,
+    price_btn: hit.price_btn,
+    cost_price_btn: hit.cost_price_btn,
+    stock_qty: hit.stock_qty,
+    availability_status: hit.stock_qty > 0 ? "in_stock" : "out_of_stock",
+    format: null,
+    isbn_13: hit.isbn_13,
+    barcode: hit.barcode,
+    product_kind: (hit.product_kind as Book["product_kind"]) || "book",
+  };
+}
+
 export function CounterTill({
-  items,
   canSeeCost,
   initialRecent = [],
   shopName = "DSB Books",
   bankQrImageUrl = null,
 }: {
-  items: PosItem[];
   canSeeCost: boolean;
   initialRecent?: CounterRecentSale[];
   shopName?: string;
@@ -66,6 +80,8 @@ export function CounterTill({
   const [picker, setPicker] = useState(false);
   const [pickQ, setPickQ] = useState("");
   const [pickAt, setPickAt] = useState(0);
+  const [pickHits, setPickHits] = useState<PosItem[]>([]);
+  const [pickLoading, setPickLoading] = useState(false);
   const pickRef = useRef<HTMLInputElement>(null);
   const scanRef = useRef<HTMLInputElement>(null);
   const [scan, setScan] = useState("");
@@ -79,25 +95,49 @@ export function CounterTill({
   );
   const [printSale, setPrintSale] = useState<CounterRecentSale | null>(null);
 
-  const filteredItems = useMemo(() => {
-    const q = pickQ.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (i) =>
-        i.title.toLowerCase().includes(q) ||
-        (i.isbn_13 ?? "").toLowerCase().includes(q) ||
-        (i.barcode ?? "").toLowerCase().includes(q) ||
-        (i.format ?? "").toLowerCase().includes(q) ||
-        (i.product_kind ?? "").toLowerCase().includes(q)
-    );
-  }, [items, pickQ]);
+  // Typeahead — free-tier safe (no full catalogue download)
+  useEffect(() => {
+    if (!picker) return;
+    const q = pickQ.trim();
+    if (q.length < 1) {
+      setPickHits([]);
+      return;
+    }
+    let cancelled = false;
+    setPickLoading(true);
+    const t = window.setTimeout(() => {
+      void searchProducts(q)
+        .then((rows) => {
+          if (cancelled) return;
+          setPickHits(
+            rows
+              .filter((r) => r.stock_qty > 0)
+              .slice(0, 40)
+              .map(hitToPos)
+          );
+          setPickAt(0);
+        })
+        .catch(() => {
+          if (!cancelled) setPickHits([]);
+        })
+        .finally(() => {
+          if (!cancelled) setPickLoading(false);
+        });
+    }, 180);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [pickQ, picker]);
 
+  const filteredItems = pickHits;
   const subtotal = cart.reduce((sum, line) => sum + line.qty * line.unitPrice, 0);
   const qtyCount = cart.reduce((sum, line) => sum + line.qty, 0);
 
   function openPicker() {
     setTenderOpen(false);
     setPickQ("");
+    setPickHits([]);
     setPickAt(0);
     setPicker(true);
     window.setTimeout(() => pickRef.current?.focus(), 0);
@@ -212,34 +252,34 @@ export function CounterTill({
     }, 40);
   }
 
-  function tryScan(code: string) {
-    const raw = code.trim().toLowerCase();
+  async function tryScan(code: string) {
+    const raw = code.trim();
     if (!raw) return;
-    const exact =
-      items.find((i) => (i.isbn_13 ?? "").toLowerCase() === raw) ||
-      items.find((i) => (i.barcode ?? "").toLowerCase() === raw) ||
-      items.find((i) => i.title.toLowerCase() === raw);
-    if (exact) {
-      addItem(exact);
+    setStatus("Looking up…");
+    try {
+      const rows = await searchProducts(raw);
+      const inStock = rows.filter((r) => r.stock_qty > 0).map(hitToPos);
+      const exact =
+        inStock.find(
+          (i) =>
+            (i.isbn_13 ?? "").toLowerCase() === raw.toLowerCase() ||
+            (i.barcode ?? "").toLowerCase() === raw.toLowerCase()
+        ) || (inStock.length === 1 ? inStock[0] : null);
+      if (exact) {
+        addItem(exact);
+        setScan("");
+        return;
+      }
+      setPickQ(raw);
+      setPickHits(inStock.slice(0, 40));
+      setPickAt(0);
+      setPicker(true);
       setScan("");
-      return;
-    }
-    const hits = items.filter(
-      (i) =>
-        i.title.toLowerCase().includes(raw) ||
-        (i.isbn_13 ?? "").toLowerCase().includes(raw) ||
-        (i.barcode ?? "").toLowerCase().includes(raw)
-    );
-    if (hits.length === 1) {
-      addItem(hits[0]);
+      window.setTimeout(() => pickRef.current?.focus(), 0);
+    } catch {
+      setStatus("Lookup failed");
       setScan("");
-      return;
     }
-    setPickQ(code.trim());
-    setPickAt(0);
-    setPicker(true);
-    setScan("");
-    window.setTimeout(() => pickRef.current?.focus(), 0);
   }
 
   async function checkout(pay: TenderResult) {
@@ -416,7 +456,7 @@ export function CounterTill({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              tryScan(scan);
+              void tryScan(scan);
             }
             if (e.altKey && e.code === "KeyL") {
               e.preventDefault();
@@ -686,7 +726,11 @@ export function CounterTill({
               ))}
               {filteredItems.length === 0 ? (
                 <li className="px-4 py-8 text-center text-sm text-[#6a6358]">
-                  No items match
+                  {pickLoading
+                    ? "Searching…"
+                    : pickQ.trim()
+                      ? "No in-stock items match"
+                      : "Type a title, brand, or barcode"}
                 </li>
               ) : null}
             </ul>

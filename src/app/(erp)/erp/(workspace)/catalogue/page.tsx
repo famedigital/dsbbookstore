@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatBtn } from "@/lib/erp/format";
 import { AvailabilityBadge } from "@/components/erp/availability-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -22,24 +23,49 @@ import {
 import { Badge } from "@/components/ui/badge";
 import type { Book, ProductKind } from "@/types/erp";
 
+const PAGE_SIZE = 50;
+
 export default async function CataloguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ kind?: string; imported?: string }>;
+  searchParams: Promise<{
+    kind?: string;
+    imported?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   await requireStaff();
-  const { kind, imported } = await searchParams;
+  const { kind, imported, q, page: pageRaw } = await searchParams;
+  const page = Math.max(1, Number(pageRaw) || 1);
   const supabase = await createClient();
 
-  let query = supabase.from("books").select("*").order("updated_at", {
-    ascending: false,
-  });
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  const term = q?.trim()?.replace(/%/g, "");
+
+  let query = supabase
+    .from("books")
+    .select(
+      "id, title, brand, barcode, isbn_13, cost_price_btn, price_btn, opening_qty, stock_qty, clo_val_btn, availability_status, product_kind",
+      { count: "exact" }
+    )
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+
   if (kind === "book" || kind === "stationery" || kind === "other") {
     query = query.eq("product_kind", kind);
   }
+  if (term) {
+    query = query.or(
+      `title.ilike.%${term}%,brand.ilike.%${term}%,barcode.ilike.%${term}%,isbn_13.ilike.%${term}%`
+    );
+  }
 
-  const { data: books } = await query;
+  const { data: books, count } = await query;
   const list = (books ?? []) as Book[];
+  const total = count ?? list.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const filters: { id: string; label: string }[] = [
     { id: "", label: "All" },
@@ -54,6 +80,21 @@ export default async function CataloguePage({
     return "Book";
   }
 
+  function href(extra: Record<string, string | undefined>) {
+    const sp = new URLSearchParams();
+    const merged = {
+      kind: kind || undefined,
+      q: term || undefined,
+      page: page > 1 ? String(page) : undefined,
+      ...extra,
+    };
+    for (const [k, v] of Object.entries(merged)) {
+      if (v) sp.set(k, v);
+    }
+    const qs = sp.toString();
+    return qs ? `/erp/catalogue?${qs}` : "/erp/catalogue";
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between gap-4">
@@ -62,8 +103,8 @@ export default async function CataloguePage({
             Products
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Stock Register columns: Product, Brand, Pur Rate, Sal Rate, Opening,
-            Closing, Clo Val, UPCEAN.
+            Stock Register columns · paginated for free-tier safety (
+            {PAGE_SIZE}/page).
           </p>
         </div>
         <Button asChild>
@@ -77,10 +118,31 @@ export default async function CataloguePage({
         </p>
       ) : null}
 
+      <form
+        action="/erp/catalogue"
+        method="get"
+        className="flex flex-wrap items-center gap-2"
+      >
+        {kind ? <input type="hidden" name="kind" value={kind} /> : null}
+        <Input
+          name="q"
+          defaultValue={term}
+          placeholder="Search title, brand, barcode…"
+          className="max-w-sm"
+        />
+        <Button type="submit" size="sm">
+          Search
+        </Button>
+        {term ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href={href({ q: undefined, page: undefined })}>Clear</Link>
+          </Button>
+        ) : null}
+      </form>
+
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => {
           const active = (kind || "") === f.id;
-          const href = f.id ? `/erp/catalogue?kind=${f.id}` : "/erp/catalogue";
           return (
             <Button
               key={f.id || "all"}
@@ -88,7 +150,14 @@ export default async function CataloguePage({
               size="sm"
               variant={active ? "default" : "outline"}
             >
-              <Link href={href}>{f.label}</Link>
+              <Link
+                href={href({
+                  kind: f.id || undefined,
+                  page: undefined,
+                })}
+              >
+                {f.label}
+              </Link>
             </Button>
           );
         })}
@@ -97,7 +166,10 @@ export default async function CataloguePage({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Stock Register</CardTitle>
-          <CardDescription>{list.length} product(s)</CardDescription>
+          <CardDescription>
+            Showing {list.length} of {total.toLocaleString("en-BT")} · page{" "}
+            {page}/{totalPages}
+          </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -119,8 +191,7 @@ export default async function CataloguePage({
               {list.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={10} className="text-muted-foreground">
-                    No products yet. Import the Stock Register Excel to load the
-                    shop catalogue.
+                    No products match. Try another search or clear filters.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -169,6 +240,30 @@ export default async function CataloguePage({
               )}
             </TableBody>
           </Table>
+
+          {totalPages > 1 ? (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              {page > 1 ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link
+                    href={href({
+                      page: page - 1 > 1 ? String(page - 1) : undefined,
+                    })}
+                  >
+                    Previous
+                  </Link>
+                </Button>
+              ) : null}
+              <span className="text-muted-foreground text-xs">
+                Page {page} / {totalPages}
+              </span>
+              {page < totalPages ? (
+                <Button asChild size="sm" variant="outline">
+                  <Link href={href({ page: String(page + 1) })}>Next</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>
