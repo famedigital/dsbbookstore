@@ -7,24 +7,24 @@ import {
 } from "@/lib/storefront/institutional";
 
 export function StorefrontHeader({ active }: { active?: string }) {
-  const mobileNav = PRIMARY_NAV.filter((item) => item.href !== "/");
-
   return (
-    <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)]/70 bg-[color:var(--sf-bg)]/90 backdrop-blur-xl sf-dzong-top">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2.5 md:gap-4 md:px-6 md:py-3.5">
+    <header className="sticky top-0 z-40 border-b border-[color:var(--sf-line)]/70 bg-[color:var(--sf-bg)]/95 backdrop-blur-xl sf-dzong-top">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5 md:gap-4 md:px-6 md:py-3">
         <Link
           href="/"
-          className="shrink-0 font-heading text-xl tracking-tight text-[color:var(--sf-ink)] md:text-2xl"
+          className="shrink-0 font-heading text-lg tracking-tight text-[color:var(--sf-ink)] sm:text-xl md:text-2xl"
         >
           DSB
           <span className="text-[color:var(--sf-accent)]">Books</span>
         </Link>
-        <nav className="hidden items-center gap-5 text-[0.8rem] font-medium tracking-wide text-[color:var(--sf-ink)] lg:flex xl:gap-6">
+
+        {/* Same nav on all sizes — compact desktop, not a separate mobile pattern */}
+        <nav className="flex min-w-0 flex-1 items-center justify-center gap-x-2 gap-y-1 overflow-x-auto text-[0.65rem] font-medium tracking-wide text-[color:var(--sf-ink)] sm:gap-x-3 sm:text-[0.72rem] md:gap-x-4 md:text-[0.8rem] lg:gap-x-5">
           {PRIMARY_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`sf-link-gilt whitespace-nowrap ${
+              className={`sf-link-gilt shrink-0 whitespace-nowrap ${
                 active === item.href
                   ? "text-[color:var(--sf-accent)]"
                   : "text-[color:var(--sf-ink)]/80"
@@ -34,29 +34,14 @@ export function StorefrontHeader({ active }: { active?: string }) {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/books" className="sf-btn !px-3 !py-1.5 text-xs">
-            Shop
-          </Link>
-        </div>
+
+        <Link
+          href="/books"
+          className="sf-btn shrink-0 !px-2.5 !py-1 text-[0.65rem] sm:!px-3 sm:!py-1.5 sm:text-xs"
+        >
+          Shop
+        </Link>
       </div>
-      <nav className="border-t border-[color:var(--sf-line)] lg:hidden">
-        <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-1.5 text-xs font-medium whitespace-nowrap">
-          {mobileNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`rounded-sm px-3 py-1 transition-colors ${
-                active === item.href
-                  ? "bg-[color:var(--sf-accent)] text-white"
-                  : "text-[color:var(--sf-muted)] hover:text-[color:var(--sf-accent)]"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
     </header>
   );
 }
@@ -64,7 +49,7 @@ export function StorefrontHeader({ active }: { active?: string }) {
 export function StorefrontFooter() {
   return (
     <footer className="sf-textile mt-auto bg-[color:var(--sf-night,#1a2430)] text-[color:var(--sf-ivory,#f7f2e8)] sf-dzong-top">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10 md:grid-cols-4 md:gap-10 md:px-6 md:py-14">
+      <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-8 sm:gap-8 sm:py-10 md:grid-cols-4 md:gap-10 md:px-6 md:py-14">
         <div className="md:col-span-1">
           <p className="font-heading text-2xl md:text-3xl">
             DSB

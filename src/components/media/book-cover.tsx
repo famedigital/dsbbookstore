@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { CldImage } from "next-cloudinary";
 import { buildCoverUrl } from "@/lib/cloudinary-url";
@@ -41,7 +42,14 @@ function isLocalOrRemoteSrc(value: string) {
   );
 }
 
-/** Cloudinary-optimized cover. Falls back to local/remote src, then placeholder. */
+function localFallbackSrc(src: string) {
+  if (!src.startsWith("/covers/")) return null;
+  if (src.endsWith(".jpg")) return src.replace(/\.jpg$/i, ".svg");
+  if (src.endsWith(".svg")) return src.replace(/\.svg$/i, ".jpg");
+  return null;
+}
+
+/** Cover image with local/remote/Cloudinary + jpg↔svg fallback. */
 export function BookCover({
   publicId,
   alt,
@@ -52,37 +60,50 @@ export function BookCover({
   priority,
 }: Props) {
   const frame = `sf-cover object-cover ${className ?? ""}`;
+  const [src, setSrc] = useState(publicId ?? "");
+  const [failed, setFailed] = useState(false);
 
-  if (!publicId) {
+  if (!publicId || failed) {
     return (
       <Placeholder alt={alt} width={width} height={height} className={frame} />
     );
   }
 
-  if (isLocalOrRemoteSrc(publicId)) {
-    if (publicId.endsWith(".svg")) {
+  if (isLocalOrRemoteSrc(src)) {
+    if (src.endsWith(".svg")) {
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={publicId}
+          src={src}
           alt={alt}
           width={width}
           height={height}
           className={frame}
           loading={priority ? "eager" : "lazy"}
+          onError={() => {
+            const next = localFallbackSrc(src);
+            if (next && next !== src) setSrc(next);
+            else setFailed(true);
+          }}
         />
       );
     }
 
     return (
       <Image
-        src={publicId}
+        src={src}
         alt={alt}
         width={width}
         height={height}
         sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
         className={frame}
         priority={priority}
+        unoptimized={src.startsWith("/")}
+        onError={() => {
+          const next = localFallbackSrc(src);
+          if (next && next !== src) setSrc(next);
+          else setFailed(true);
+        }}
       />
     );
   }
@@ -103,6 +124,7 @@ export function BookCover({
         sizes={sizes ?? "(max-width: 768px) 50vw, 25vw"}
         className={frame}
         priority={priority}
+        onError={() => setFailed(true)}
       />
     );
   }
@@ -118,6 +140,7 @@ export function BookCover({
         height={height}
         className={frame}
         loading={priority ? "eager" : "lazy"}
+        onError={() => setFailed(true)}
       />
     );
   }
