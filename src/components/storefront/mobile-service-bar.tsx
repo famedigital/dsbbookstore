@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { GOOGLE_MAPS_URL, STORE_GEO } from "@/lib/storefront/seo";
-import { whatsappUrl } from "@/lib/storefront/whatsapp";
+import { useWhatsApp } from "@/components/storefront/storefront-providers";
 
 /** Sticky mobile Call · Maps · WhatsApp — not overlaid on hero. */
 export function MobileServiceBar() {
-  const wa = whatsappUrl(
+  const { url } = useWhatsApp();
+  const wa = url(
     "Hi DSB Books — I'd like to ask about a title / visit Chang Lam."
   );
 

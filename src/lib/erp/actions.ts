@@ -658,6 +658,8 @@ export async function updateStoreSettings(formData: FormData) {
   // Production storefront is atelier-only (legacy kits demoted).
   void formData.get("storefront_theme");
   const storefront_theme = "atelier";
+  const whatsapp_number =
+    String(formData.get("whatsapp_number") || "").trim() || null;
 
   const { error } = await supabase
     .from("store_settings")
@@ -674,6 +676,7 @@ export async function updateStoreSettings(formData: FormData) {
       public_tagline: String(formData.get("public_tagline") || "") || null,
       visit_directions:
         String(formData.get("visit_directions") || "") || null,
+      whatsapp_number,
       storefront_theme,
       updated_at: new Date().toISOString(),
     })

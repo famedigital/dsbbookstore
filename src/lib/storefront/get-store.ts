@@ -19,6 +19,7 @@ export type PublicStoreProfile = Pick<
   | "receipt_thanks"
   | "receipt_paper_mm"
   | "print_mode"
+  | "whatsapp_number"
 >;
 
 export const DEFAULT_PUBLIC_STORE: PublicStoreProfile = {
@@ -40,6 +41,7 @@ export const DEFAULT_PUBLIC_STORE: PublicStoreProfile = {
   receipt_thanks: "Thank you for shopping at DSB Books",
   receipt_paper_mm: 80,
   print_mode: "usb",
+  whatsapp_number: "+61 434 741 331",
 };
 
 export function brandParts(storeName: string) {
@@ -70,7 +72,7 @@ export async function getPublicStore(): Promise<PublicStoreProfile> {
     const { data } = await supabase
       .from("store_settings")
       .select(
-        "store_name, legal_name, address_line1, city, country, phone, email, opening_hours, public_tagline, visit_directions, website_url, receipt_footer, receipt_header_note, receipt_thanks, receipt_paper_mm, print_mode"
+        "store_name, legal_name, address_line1, city, country, phone, email, opening_hours, public_tagline, visit_directions, website_url, receipt_footer, receipt_header_note, receipt_thanks, receipt_paper_mm, print_mode, whatsapp_number"
       )
       .eq("id", 1)
       .maybeSingle();

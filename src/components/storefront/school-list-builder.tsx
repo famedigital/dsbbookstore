@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { BookCover } from "@/components/media/book-cover";
 import { formatBtn } from "@/lib/erp/format";
-import { whatsappUrl } from "@/lib/storefront/whatsapp";
+import { useWhatsApp } from "@/components/storefront/storefront-providers";
 import type { StorefrontSearchHit } from "@/app/api/search/route";
 
 type ListItem = {
@@ -46,6 +46,7 @@ export function SchoolListBuilder() {
   const [org, setOrg] = useState("");
   const [contact, setContact] = useState("");
   const [pending, startTransition] = useTransition();
+  const { url } = useWhatsApp();
 
   useEffect(() => {
     setItems(readList());
@@ -105,7 +106,7 @@ export function SchoolListBuilder() {
   }
 
   const total = items.reduce((s, i) => s + i.qty * i.price_btn, 0);
-  const wa = whatsappUrl(
+  const wa = url(
     [
       `Hi DSB Books — school / reading list enquiry`,
       org ? `Organisation: ${org}` : null,

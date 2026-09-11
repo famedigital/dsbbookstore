@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useHoldBag } from "@/components/storefront/hold-bag";
 import { ReadingListToggle } from "@/components/storefront/reading-list-toggle";
-import { bookWhatsAppHref } from "@/lib/storefront/whatsapp";
+import { useWhatsApp } from "@/components/storefront/storefront-providers";
 import { submitStockAlert } from "@/lib/erp/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,8 @@ export function BookPurchaseActions({
   canBuy: boolean;
 }) {
   const { add } = useHoldBag();
-  const wa = bookWhatsAppHref({
+  const { bookHref } = useWhatsApp();
+  const wa = bookHref({
     title: book.title,
     slug: book.slug,
     isbn: book.isbn_13 || book.barcode,

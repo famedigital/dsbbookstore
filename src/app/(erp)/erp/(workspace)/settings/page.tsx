@@ -102,6 +102,11 @@ export default async function SettingsPage() {
               name="visit_directions"
               value={store.visit_directions ?? ""}
             />
+            <input
+              type="hidden"
+              name="whatsapp_number"
+              value={store.whatsapp_number ?? "+61 434 741 331"}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               {STOREFRONT_THEMES.filter((t) => t.id === "atelier").map(
@@ -175,12 +180,28 @@ export default async function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">Shop phone (landline)</Label>
               <Input
                 id="phone"
                 name="phone"
                 defaultValue={store.phone ?? ""}
+                placeholder="02 326275"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp_number">WhatsApp number</Label>
+              <Input
+                id="whatsapp_number"
+                name="whatsapp_number"
+                defaultValue={
+                  store.whatsapp_number ?? "+61 434 741 331"
+                }
+                placeholder="+61 434 741 331"
+              />
+              <p className="text-muted-foreground text-xs">
+                Used for storefront WhatsApp buttons (wa.me). Separate from the
+                shop landline.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

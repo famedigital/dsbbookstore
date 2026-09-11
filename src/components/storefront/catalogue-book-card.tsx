@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { BookCover } from "@/components/media/book-cover";
 import { ReadingListToggle } from "@/components/storefront/reading-list-toggle";
+import { useWhatsApp } from "@/components/storefront/storefront-providers";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
-import { bookWhatsAppHref } from "@/lib/storefront/whatsapp";
 import type { CatalogueBook } from "@/lib/storefront/catalogue-query";
 
 function yearFrom(publishedAt?: string | null) {
@@ -24,6 +24,7 @@ function blurb(book: CatalogueBook) {
 }
 
 export function CatalogueBookCard({ book }: { book: CatalogueBook }) {
+  const { bookHref } = useWhatsApp();
   const canBuy =
     book.availability_status === "in_stock" ||
     book.availability_status === "low_stock";
@@ -38,7 +39,7 @@ export function CatalogueBookCard({ book }: { book: CatalogueBook }) {
     year,
     book.page_count ? `${book.page_count} pp` : null,
   ].filter(Boolean);
-  const wa = bookWhatsAppHref({
+  const wa = bookHref({
     title: book.title,
     slug: book.slug,
     isbn: book.isbn_13 || book.barcode,

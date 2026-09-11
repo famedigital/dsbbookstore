@@ -10,6 +10,8 @@ import { HeaderSearch } from "@/components/storefront/header-search";
 import { StorefrontMegaNav } from "@/components/storefront/mega-nav";
 import { HoldBagButton } from "@/components/storefront/hold-bag";
 import { StorefrontProviders } from "@/components/storefront/storefront-providers";
+import { getPublicStore } from "@/lib/storefront/get-store";
+import { normalizeWhatsAppDigits } from "@/lib/storefront/whatsapp";
 
 export function StorefrontHeader({
   active,
@@ -174,7 +176,7 @@ export function StorefrontFooter({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function StorefrontShell({
+export async function StorefrontShell({
   children,
   active,
   theme = "atelier",
@@ -187,12 +189,15 @@ export function StorefrontShell({
   compactFooter?: boolean;
   searchQuery?: string;
 }) {
+  const store = await getPublicStore();
+  const whatsappDigits = normalizeWhatsAppDigits(store.whatsapp_number);
+
   return (
     <div
       data-theme={theme}
       className="sf-paper flex min-h-screen flex-col text-[color:var(--sf-ink)] selection:bg-[color:var(--sf-accent)] selection:text-white"
     >
-      <StorefrontProviders>
+      <StorefrontProviders whatsappDigits={whatsappDigits}>
         <StorefrontHeader active={active} searchQuery={searchQuery} />
         <main className="flex-1">{children}</main>
         <StorefrontFooter compact={compactFooter} />

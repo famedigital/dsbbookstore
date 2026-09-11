@@ -307,6 +307,8 @@ export type StoreSettings = {
   receipt_paper_mm?: number | null;
   print_mode?: "usb" | "none" | string | null;
   bank_qr_image_url?: string | null;
+  /** WhatsApp for storefront CTAs (wa.me) — not the shop landline */
+  whatsapp_number?: string | null;
   updated_at: string;
 };
 
