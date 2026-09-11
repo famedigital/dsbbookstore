@@ -27,16 +27,33 @@ export function normalizeIsbn(value?: string | null): string | null {
 
 /**
  * Free CDN cover by ISBN — no Cloudinary/Supabase storage.
- * Size: S (~small), M (lists), L (detail).
+ * Size: S (~small), M (lists ~180px), L (detail ~ up to ~500px+).
+ * Prefer L for retina catalogue / PDP — M looks muddy when scaled.
  * `default=false` makes missing covers 404 (instead of a blank 1×1 placeholder).
  */
 export function openLibraryCoverUrl(
   isbnOrBarcode?: string | null,
-  size: "S" | "M" | "L" = "M"
+  size: "S" | "M" | "L" = "L"
 ): string | null {
   const isbn = normalizeIsbn(isbnOrBarcode);
   if (!isbn) return null;
   return `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg?default=false`;
+}
+
+/** Bump Open Library cover URLs to a sharper size when we already stored -S/-M. */
+export function sharpenOpenLibraryUrl(
+  url: string,
+  size: "M" | "L" = "L"
+): string {
+  if (!url.includes("covers.openlibrary.org")) return url;
+  return url
+    .replace(/-S\.jpg/i, `-${size}.jpg`)
+    .replace(/-M\.jpg/i, `-${size}.jpg`);
+}
+
+function olSizeForWidth(width?: number): "M" | "L" {
+  // Retina catalogue thumbs still need L; only tiny chrome uses M
+  return (width ?? 400) >= 120 ? "L" : "M";
 }
 
 /** Prefer stored cover, else Open Library from ISBN/barcode. */
@@ -46,6 +63,7 @@ export function resolveCoverSrc(opts: {
   barcode?: string | null;
   width?: number;
 }): string | null {
+  const size = olSizeForWidth(opts.width);
   const stored = opts.publicId?.trim();
   if (stored) {
     if (
@@ -53,11 +71,10 @@ export function resolveCoverSrc(opts: {
       stored.startsWith("http://") ||
       stored.startsWith("https://")
     ) {
-      return stored;
+      return sharpenOpenLibraryUrl(stored, size);
     }
     return buildCoverUrl(stored, opts.width ?? 400);
   }
-  const size = (opts.width ?? 400) >= 480 ? "L" : "M";
   return (
     openLibraryCoverUrl(opts.isbn, size) ||
     openLibraryCoverUrl(opts.barcode, size)

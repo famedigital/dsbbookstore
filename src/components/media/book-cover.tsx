@@ -7,6 +7,7 @@ import {
   buildCoverUrl,
   openLibraryCoverUrl,
   resolveCoverSrc,
+  sharpenOpenLibraryUrl,
 } from "@/lib/cloudinary-url";
 
 type Props = {
@@ -78,7 +79,9 @@ export function BookCover({
   const frame = `sf-cover object-cover ${className ?? ""}`;
   const initial =
     resolveCoverSrc({ publicId, isbn, barcode, width }) || publicId || "";
-  const [src, setSrc] = useState(initial);
+  const [src, setSrc] = useState(() =>
+    initial ? sharpenOpenLibraryUrl(initial, width >= 120 ? "L" : "M") : ""
+  );
   const [failed, setFailed] = useState(false);
   const [triedOl, setTriedOl] = useState(false);
 
@@ -104,8 +107,8 @@ export function BookCover({
             if (next && next !== src) setSrc(next);
             else if (!triedOl) {
               const ol =
-                openLibraryCoverUrl(isbn, "M") ||
-                openLibraryCoverUrl(barcode, "M");
+                openLibraryCoverUrl(isbn, "L") ||
+                openLibraryCoverUrl(barcode, "L");
               setTriedOl(true);
               if (ol) setSrc(ol);
               else setFailed(true);
@@ -133,8 +136,8 @@ export function BookCover({
           }
           if (!triedOl) {
             const ol =
-              openLibraryCoverUrl(isbn, "M") ||
-              openLibraryCoverUrl(barcode, "M");
+              openLibraryCoverUrl(isbn, "L") ||
+              openLibraryCoverUrl(barcode, "L");
             setTriedOl(true);
             if (ol && ol !== src) {
               setSrc(ol);
@@ -166,8 +169,8 @@ export function BookCover({
         onError={() => {
           if (!triedOl) {
             const ol =
-              openLibraryCoverUrl(isbn, "M") ||
-              openLibraryCoverUrl(barcode, "M");
+              openLibraryCoverUrl(isbn, "L") ||
+              openLibraryCoverUrl(barcode, "L");
             setTriedOl(true);
             if (ol) {
               setSrc(ol);

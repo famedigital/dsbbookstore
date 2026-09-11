@@ -47,7 +47,7 @@ async function coverExists(url) {
 
 async function coverByIsbn(isbn) {
   return coverExists(
-    `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`
+    `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`
   );
 }
 
@@ -62,7 +62,7 @@ async function coverByTitle(title) {
   for (const doc of json.docs || []) {
     if (!doc.cover_i) continue;
     // cover_i IDs are known-good on OL — skip second download verify
-    return `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg?default=false`;
+    return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg?default=false`;
   }
   return null;
 }
