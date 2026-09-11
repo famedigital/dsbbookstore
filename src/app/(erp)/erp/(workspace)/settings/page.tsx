@@ -104,43 +104,40 @@ export default async function SettingsPage() {
             />
 
             <div className="grid gap-4 md:grid-cols-2">
-              {STOREFRONT_THEMES.map((theme) => (
-                <label
-                  key={theme.id}
-                  className={`cursor-pointer rounded-xl border p-4 transition hover:border-primary ${
-                    activeTheme === theme.id
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-border"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="radio"
-                      name="storefront_theme"
-                      value={theme.id}
-                      defaultChecked={activeTheme === theme.id}
-                      className="mt-1"
-                    />
-                    <div>
-                      <p className="font-medium">{theme.name}</p>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        {theme.description}
-                      </p>
-                      {theme.figma ? (
-                        <a
-                          href={theme.figma}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary mt-2 inline-block text-xs underline"
-                        >
-                          Open Figma reference
-                        </a>
-                      ) : null}
+              {STOREFRONT_THEMES.filter((t) => t.id === "atelier").map(
+                (theme) => (
+                  <label
+                    key={theme.id}
+                    className={`cursor-pointer rounded-xl border p-4 transition hover:border-primary ${
+                      activeTheme === theme.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="radio"
+                        name="storefront_theme"
+                        value={theme.id}
+                        defaultChecked
+                        className="mt-1"
+                      />
+                      <div>
+                        <p className="font-medium">{theme.name}</p>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          {theme.description} Production storefront uses this
+                          look only.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                )
+              )}
             </div>
+            <p className="text-muted-foreground text-xs">
+              Legacy UI kits (UI Kit / Booksaw / Booketic) are demoted —
+              storefront always resolves to Chang Lam atelier.
+            </p>
             <Button type="submit">Save template</Button>
           </form>
         </CardContent>

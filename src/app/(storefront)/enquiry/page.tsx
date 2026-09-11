@@ -19,13 +19,15 @@ export const metadata = {
 export default async function EnquiryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; title?: string }>;
+  searchParams: Promise<{ sent?: string; title?: string; message?: string }>;
 }) {
-  const { sent, title } = await searchParams;
+  const { sent, title, message } = await searchParams;
   const theme = await getStorefrontTheme();
-  const defaultMessage = title?.trim()
-    ? `I would like to enquire about "${title.trim()}".`
-    : "I would like to ask about…";
+  const defaultMessage =
+    message?.trim() ||
+    (title?.trim()
+      ? `I would like to enquire about "${title.trim()}".`
+      : "I would like to ask about…");
 
   return (
     <StorefrontShell active="/enquiry" theme={theme}>

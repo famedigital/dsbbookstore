@@ -41,8 +41,7 @@ export function isStorefrontThemeId(value: string): value is StorefrontThemeId {
 }
 
 export function resolveStorefrontTheme(
-  value: string | null | undefined,
+  _value?: string | null,
 ): StorefrontThemeId {
-  if (value && isStorefrontThemeId(value)) return value;
   return DEFAULT_STOREFRONT_THEME;
 }

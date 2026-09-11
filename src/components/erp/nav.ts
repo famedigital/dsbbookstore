@@ -4,6 +4,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   FilePenLine,
+  HandHelping,
   LayoutDashboard,
   Library,
   PackageSearch,
@@ -40,6 +41,7 @@ export const erpNav: NavItem[] = [
   { title: "Purchasing", href: "/erp/purchasing", icon: Truck },
   { title: "Customers", href: "/erp/customers", icon: Users },
   { title: "Enquiries", href: "/erp/enquiries", icon: PackageSearch },
+  { title: "Holds", href: "/erp/holds", icon: HandHelping },
   {
     title: "Finance",
     href: "/erp/finance",

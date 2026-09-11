@@ -65,7 +65,7 @@ export function ShelfCategoryTabs({
               aria-selected={selected}
               onClick={() => setActive(tab.id)}
               className={cn(
-                "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                "shrink-0 rounded-none border px-3.5 py-1.5 text-sm font-medium transition-colors",
                 selected
                   ? "border-[color:var(--sf-accent)] bg-[color:var(--sf-accent)] text-white"
                   : "border-[color:var(--sf-line)] bg-[color:var(--sf-surface)] text-[color:var(--sf-ink)] hover:border-[color:var(--sf-accent)]"

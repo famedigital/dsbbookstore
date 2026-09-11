@@ -655,12 +655,9 @@ export async function createExpense(formData: FormData) {
 export async function updateStoreSettings(formData: FormData) {
   await requireOwner();
   const supabase = await createClient();
-  const themeRaw = String(formData.get("storefront_theme") || "uikit");
-  const storefront_theme = ["uikit", "booksaw", "booketic", "atelier"].includes(
-    themeRaw,
-  )
-    ? themeRaw
-    : "uikit";
+  // Production storefront is atelier-only (legacy kits demoted).
+  void formData.get("storefront_theme");
+  const storefront_theme = "atelier";
 
   const { error } = await supabase
     .from("store_settings")
@@ -1116,4 +1113,107 @@ export async function submitPublicEnquiry(formData: FormData) {
     redirect(`/books/${bookSlug}?sent=1`);
   }
   redirect("/enquiry?sent=1");
+}
+
+/** Waterstones-style hold for pickup — structured bag → ERP queue. */
+export async function submitPickupHold(formData: FormData) {
+  const supabase = await createClient();
+  const name = String(formData.get("name") || "").trim();
+  const phone = String(formData.get("phone") || "").trim();
+  const email = String(formData.get("email") || "").trim() || null;
+  const note = String(formData.get("note") || "").trim() || null;
+  let items: Array<{
+    book_id: string;
+    title: string;
+    slug?: string;
+    qty: number;
+    price_btn: number;
+    isbn?: string | null;
+  }> = [];
+  try {
+    items = JSON.parse(String(formData.get("items_json") || "[]"));
+  } catch {
+    throw new Error("Invalid hold items");
+  }
+  if (!name || !phone) throw new Error("Name and phone are required");
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("Add at least one title to hold");
+  }
+
+  const normalized = items
+    .map((i) => ({
+      book_id: String(i.book_id || ""),
+      title: String(i.title || "").trim(),
+      slug: i.slug ? String(i.slug) : undefined,
+      qty: Math.max(1, Math.min(99, Number(i.qty) || 1)),
+      price_btn: Number(i.price_btn) || 0,
+      isbn: i.isbn ?? null,
+    }))
+    .filter((i) => i.book_id && i.title);
+
+  if (!normalized.length) throw new Error("Add at least one title to hold");
+
+  const total = normalized.reduce((s, i) => s + i.qty * i.price_btn, 0);
+  const lines = normalized
+    .map(
+      (i) =>
+        `• ${i.title}${i.isbn ? ` (${i.isbn})` : ""} ×${i.qty} — Nu. ${(i.qty * i.price_btn).toFixed(0)}`
+    )
+    .join("\n");
+
+  const { error: holdErr } = await supabase.from("pickup_holds").insert({
+    name,
+    phone,
+    email,
+    note,
+    status: "new",
+    items: normalized,
+    total_btn: total,
+  });
+  if (holdErr) throw new Error(holdErr.message);
+
+  // Also mirror into enquiries so existing staff inbox stays useful
+  await supabase.from("enquiries").insert({
+    name,
+    email: email || `${phone.replace(/\D/g, "")}@hold.dsb.local`,
+    phone,
+    message: `PICKUP HOLD (48h)\n\n${lines}\n\nTotal est. Nu. ${total.toFixed(0)}${note ? `\n\nNote: ${note}` : ""}`,
+    book_id: normalized[0]?.book_id || null,
+  });
+
+  revalidatePath("/erp/enquiries");
+  revalidatePath("/erp/holds");
+}
+
+/** Guest back-in-stock alert (throttled unique email per book). */
+export async function submitStockAlert(formData: FormData) {
+  const supabase = await createClient();
+  const bookId = String(formData.get("book_id") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  if (!bookId || !email.includes("@")) {
+    throw new Error("Valid email is required");
+  }
+  const { error } = await supabase.from("stock_alerts").upsert(
+    { book_id: bookId, email, notified_at: null },
+    { onConflict: "book_id,email" }
+  );
+  if (error) throw new Error(error.message);
+}
+
+export async function updatePickupHoldStatus(formData: FormData) {
+  const { userId } = await requireStaff();
+  const supabase = await createClient();
+  const id = String(formData.get("id") || "");
+  const status = String(formData.get("status") || "new");
+  if (!id) throw new Error("Missing hold id");
+  if (!["new", "ready", "collected", "cancelled"].includes(status)) {
+    throw new Error("Invalid status");
+  }
+  const { error } = await supabase
+    .from("pickup_holds")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  await audit(userId, "pickup_hold.update", "pickup_hold", id, { status });
+  revalidatePath("/erp/holds");
 }

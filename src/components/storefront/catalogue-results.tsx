@@ -173,12 +173,26 @@ export function CatalogueResults({
             type="button"
             onClick={loadNext}
             disabled={pending}
-            className="sf-btn !rounded-full !px-6 text-sm disabled:opacity-60"
+            className="sf-btn !rounded-none !px-6 text-sm disabled:opacity-60"
           >
             {pending
               ? "Loading…"
               : `Load more (+${Math.min(pageSize, total - books.length)})`}
           </button>
+          {pending ? (
+            <ul
+              className="mt-2 grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+              aria-hidden
+            >
+              {Array.from({ length: 5 }).map((_, i) => (
+                <li key={i} className="flex flex-col gap-2">
+                  <div className="sf-skel aspect-[2/3] w-full" />
+                  <div className="sf-skel h-3 w-3/4" />
+                  <div className="sf-skel h-3 w-1/2" />
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : books.length > 0 ? (
         <p className="mt-8 text-center text-sm text-[color:var(--sf-muted)]">
@@ -199,7 +213,7 @@ export function CatalogueResults({
                 ...baseParams,
                 page: page - 1 > 1 ? String(page - 1) : undefined,
               })}
-              className="sf-btn-outline !rounded-full !px-3 !py-1.5 text-xs"
+              className="sf-btn-outline !rounded-none !px-3 !py-1.5 text-xs"
             >
               Previous
             </Link>
@@ -210,7 +224,7 @@ export function CatalogueResults({
           {page < totalPages ? (
             <Link
               href={pageHref({ ...baseParams, page: String(page + 1) })}
-              className="sf-btn-outline !rounded-full !px-3 !py-1.5 text-xs"
+              className="sf-btn-outline !rounded-none !px-3 !py-1.5 text-xs"
               rel="next"
             >
               Next

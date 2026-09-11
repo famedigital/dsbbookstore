@@ -147,7 +147,7 @@ function Chip({
     <Link
       href={to}
       className={cn(
-        "shrink-0 rounded-full border px-2.5 py-1 text-[0.7rem] font-medium whitespace-nowrap transition-colors",
+        "shrink-0 rounded-none border px-2.5 py-1 text-[0.7rem] font-medium whitespace-nowrap transition-colors",
         active
           ? "border-[color:var(--sf-accent)] bg-[color:var(--sf-accent)] text-white"
           : tone === "muted"

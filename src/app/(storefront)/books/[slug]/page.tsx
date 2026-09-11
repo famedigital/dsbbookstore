@@ -5,6 +5,11 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server";
 import { BookCover } from "@/components/media/book-cover";
 import { StorefrontShell } from "@/components/storefront/shell";
 import { JsonLd } from "@/components/storefront/json-ld";
+import { RelatedBooks } from "@/components/storefront/related-books";
+import {
+  BookPurchaseActions,
+  StockAlertForm,
+} from "@/components/storefront/book-purchase-actions";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
 import { submitPublicEnquiry } from "@/lib/erp/actions";
@@ -102,6 +107,118 @@ export default async function BookDetailPage({
     book.availability_status === "in_stock" ||
     book.availability_status === "low_stock";
 
+  const [{ data: authorRows }, { data: catRows }] = await Promise.all([
+    supabase
+      .from("book_authors")
+      .select("authors(id, name, slug)")
+      .eq("book_id", book.id)
+      .limit(4),
+    supabase
+      .from("book_categories")
+      .select("category_id")
+      .eq("book_id", book.id)
+      .limit(3),
+  ]);
+
+  const authors = (authorRows ?? [])
+    .map((r) => {
+      const a = r.authors as unknown as
+        | { id: string; name: string; slug: string }
+        | { id: string; name: string; slug: string }[]
+        | null;
+      if (!a) return null;
+      return Array.isArray(a) ? a[0] : a;
+    })
+    .filter(Boolean) as { id: string; name: string; slug: string }[];
+
+  const categoryIds = (catRows ?? []).map((c) => c.category_id as string);
+  let related: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    brand: string | null;
+    price_btn: number;
+    cover_public_id: string | null;
+    isbn_13: string | null;
+    barcode: string | null;
+  }> = [];
+
+  if (categoryIds.length) {
+    const { data: relatedRows } = await supabase
+      .from("book_categories")
+      .select(
+        "books(id, title, slug, brand, price_btn, cover_public_id, isbn_13, barcode, is_published, product_kind)"
+      )
+      .in("category_id", categoryIds)
+      .limit(24);
+    const seen = new Set<string>([book.id]);
+    for (const row of relatedRows ?? []) {
+      const b = row.books as unknown as
+        | Record<string, unknown>
+        | Record<string, unknown>[]
+        | null;
+      const list = !b ? [] : Array.isArray(b) ? b : [b];
+      for (const item of list) {
+        if (!item || seen.has(item.id as string)) continue;
+        if (item.is_published === false) continue;
+        if (item.product_kind && item.product_kind !== "book") continue;
+        seen.add(item.id as string);
+        related.push({
+          id: item.id as string,
+          title: item.title as string,
+          slug: item.slug as string,
+          brand: (item.brand as string | null) ?? null,
+          price_btn: Number(item.price_btn) || 0,
+          cover_public_id: (item.cover_public_id as string | null) ?? null,
+          isbn_13: (item.isbn_13 as string | null) ?? null,
+          barcode: (item.barcode as string | null) ?? null,
+        });
+        if (related.length >= 5) break;
+      }
+      if (related.length >= 5) break;
+    }
+  }
+
+  if (related.length < 5 && authors[0]) {
+    const { data: byAuthor } = await supabase
+      .from("book_authors")
+      .select(
+        "books(id, title, slug, brand, price_btn, cover_public_id, isbn_13, barcode, is_published)"
+      )
+      .eq("author_id", authors[0].id)
+      .limit(12);
+    const seen = new Set(related.map((r) => r.id).concat(book.id));
+    for (const row of byAuthor ?? []) {
+      const b = row.books as unknown as
+        | Record<string, unknown>
+        | Record<string, unknown>[]
+        | null;
+      const list = !b ? [] : Array.isArray(b) ? b : [b];
+      for (const item of list) {
+        if (!item || seen.has(item.id as string) || item.is_published === false)
+          continue;
+        seen.add(item.id as string);
+        related.push({
+          id: item.id as string,
+          title: item.title as string,
+          slug: item.slug as string,
+          brand: (item.brand as string | null) ?? null,
+          price_btn: Number(item.price_btn) || 0,
+          cover_public_id: (item.cover_public_id as string | null) ?? null,
+          isbn_13: (item.isbn_13 as string | null) ?? null,
+          barcode: (item.barcode as string | null) ?? null,
+        });
+        if (related.length >= 5) break;
+      }
+      if (related.length >= 5) break;
+    }
+  }
+
+  const blurb =
+    book.subtitle ||
+    (book.description ? book.description.slice(0, 220) : null) ||
+    "Live stock at DSB Books on Chang Lam — hold for pickup or WhatsApp us.";
+
   return (
     <StorefrontShell active="/books" theme={theme}>
       <JsonLd data={localBusinessJsonLd()} />
@@ -114,16 +231,18 @@ export default async function BookDetailPage({
 
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-3 py-6 sm:px-4 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-12 md:px-6 md:py-12">
         <div className="mx-auto w-full max-w-[240px] md:mx-0 md:max-w-none">
-          <BookCover
-            publicId={book.cover_public_id}
-            isbn={book.isbn_13}
-            barcode={book.barcode}
-            alt={book.title}
-            width={640}
-            height={960}
-            className="w-full object-cover"
-            priority
-          />
+          <div className="sf-book-card__cover overflow-hidden">
+            <BookCover
+              publicId={book.cover_public_id}
+              isbn={book.isbn_13}
+              barcode={book.barcode}
+              alt={book.title}
+              width={640}
+              height={960}
+              className="w-full object-cover"
+              priority
+            />
+          </div>
         </div>
         <div>
           <p className="sf-eyebrow">
@@ -133,17 +252,30 @@ export default async function BookDetailPage({
               : ""}
           </p>
           <h1 className="sf-title mt-2 text-2xl md:text-4xl">{book.title}</h1>
-          {book.brand ? (
+          {authors.length ? (
+            <p className="mt-2 text-sm text-[color:var(--sf-muted)] md:text-base">
+              {authors.map((a, i) => (
+                <span key={a.id}>
+                  {i > 0 ? ", " : null}
+                  <Link
+                    href={`/authors/${a.slug}`}
+                    className="text-[color:var(--sf-accent)] hover:underline"
+                  >
+                    {a.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          ) : book.brand ? (
             <p className="mt-2 text-sm text-[color:var(--sf-muted)] md:text-base">
               {book.brand}
             </p>
           ) : null}
-          {book.subtitle ? (
-            <p className="mt-2 text-sm text-[color:var(--sf-muted)] md:text-base">
-              {book.subtitle}
-            </p>
-          ) : null}
-          <p className="mt-5 font-display text-2xl font-semibold tracking-tight md:mt-6 md:text-3xl">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[color:var(--sf-muted)] md:text-base">
+            {blurb}
+            {book.description && book.description.length > 220 ? "…" : ""}
+          </p>
+          <p className="mt-5 font-display text-2xl font-semibold tracking-tight text-[color:var(--sf-accent)] md:mt-6 md:text-3xl">
             {formatBtn(book.price_btn)}
           </p>
           <p className="mt-2 text-xs text-[color:var(--sf-muted)]">
@@ -158,14 +290,10 @@ export default async function BookDetailPage({
             </a>
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            <a href="#enquire" className="sf-btn !rounded-full text-sm">
-              {canBuy ? "Reserve / enquire" : "Enquire"}
-            </a>
-            <Link href="/books" className="sf-btn-outline !rounded-full text-sm">
-              ← Catalogue
-            </Link>
-          </div>
+          <BookPurchaseActions book={book} canBuy={canBuy} />
+          {!canBuy ? (
+            <StockAlertForm bookId={book.id} title={book.title} />
+          ) : null}
 
           <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-[color:var(--sf-line)] py-4 text-sm md:mt-8 md:gap-x-6 md:py-6">
             <div>
@@ -201,12 +329,6 @@ export default async function BookDetailPage({
                   ? String(book.published_at).slice(0, 10)
                   : "—"}
               </dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] tracking-[0.16em] text-[color:var(--sf-muted)] uppercase">
-                On hand
-              </dt>
-              <dd className="mt-1">{book.stock_qty}</dd>
             </div>
             <div>
               <dt className="text-[0.65rem] tracking-[0.16em] text-[color:var(--sf-muted)] uppercase">
@@ -279,6 +401,8 @@ export default async function BookDetailPage({
           )}
         </div>
       </div>
+
+      <RelatedBooks books={related} />
     </StorefrontShell>
   );
 }

@@ -8,6 +8,8 @@ import {
 import { DsbLogo } from "@/components/brand/dsb-logo";
 import { HeaderSearch } from "@/components/storefront/header-search";
 import { StorefrontMegaNav } from "@/components/storefront/mega-nav";
+import { HoldBagButton } from "@/components/storefront/hold-bag";
+import { StorefrontProviders } from "@/components/storefront/storefront-providers";
 
 export function StorefrontHeader({
   active,
@@ -28,14 +30,30 @@ export function StorefrontHeader({
           className="min-w-0 flex-1 md:max-w-md lg:max-w-lg"
         />
 
-        <div className="hidden shrink-0 sm:block" aria-label="Primary">
-          <StorefrontMegaNav active={active} />
+        <div className="flex shrink-0 items-center gap-2">
+          <HoldBagButton className="hidden sm:inline-flex" />
+          <Link
+            href="/list"
+            className="hidden text-[0.7rem] font-semibold tracking-[0.1em] text-[color:var(--sf-muted)] uppercase hover:text-[color:var(--sf-accent)] sm:inline"
+          >
+            List
+          </Link>
+          <div className="hidden sm:block" aria-label="Primary">
+            <StorefrontMegaNav active={active} />
+          </div>
         </div>
       </div>
       <nav
         className="flex min-w-0 items-center gap-x-3.5 overflow-x-auto border-t border-[color:var(--sf-line)]/50 px-3 py-1.5 text-[0.75rem] font-medium sm:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Primary mobile"
       >
+        <HoldBagButton />
+        <Link
+          href="/list"
+          className="shrink-0 text-[color:var(--sf-ink)]/80"
+        >
+          List
+        </Link>
         {PRIMARY_NAV.map((item) => (
           <Link
             key={item.href}
@@ -174,9 +192,11 @@ export function StorefrontShell({
       data-theme={theme}
       className="sf-paper flex min-h-screen flex-col text-[color:var(--sf-ink)] selection:bg-[color:var(--sf-accent)] selection:text-white"
     >
-      <StorefrontHeader active={active} searchQuery={searchQuery} />
-      <main className="flex-1">{children}</main>
-      <StorefrontFooter compact={compactFooter} />
+      <StorefrontProviders>
+        <StorefrontHeader active={active} searchQuery={searchQuery} />
+        <main className="flex-1">{children}</main>
+        <StorefrontFooter compact={compactFooter} />
+      </StorefrontProviders>
     </div>
   );
 }

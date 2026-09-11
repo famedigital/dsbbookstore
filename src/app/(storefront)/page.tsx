@@ -12,6 +12,8 @@ import {
   type ShelfBook,
   type ShelfCategory,
 } from "@/components/storefront/shelf-category-tabs";
+import { CuratedShelf } from "@/components/storefront/curated-shelf";
+import { EventsStrip } from "@/components/storefront/events-strip";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { INSTITUTIONAL_SECTIONS } from "@/lib/storefront/institutional";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
@@ -20,6 +22,8 @@ import type { Book } from "@/types/erp";
 export default async function HomePage() {
   const theme = await getStorefrontTheme();
   let featured: Book[] = [];
+  let newArrivals: Book[] = [];
+  let staffPicks: Book[] = [];
   let heroSlides: HeroSlide[] = [];
   let settings: { store_name: string; opening_hours: string | null } | null =
     null;
@@ -33,6 +37,8 @@ export default async function HomePage() {
       { data: store },
       { data: cats },
       { data: shelfRows },
+      { data: arrivals },
+      { data: inStock },
     ] = await Promise.all([
       supabase
         .from("books")
@@ -60,6 +66,22 @@ export default async function HomePage() {
         .eq("product_kind", "book")
         .order("updated_at", { ascending: false })
         .limit(48),
+      supabase
+        .from("books")
+        .select("*")
+        .eq("is_published", true)
+        .eq("product_kind", "book")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("books")
+        .select("*")
+        .eq("is_published", true)
+        .eq("product_kind", "book")
+        .in("availability_status", ["in_stock", "low_stock"])
+        .gt("stock_qty", 0)
+        .order("updated_at", { ascending: false })
+        .limit(10),
     ]);
 
     let list = (books as Book[]) ?? [];
@@ -76,6 +98,22 @@ export default async function HomePage() {
     }
 
     featured = list.slice(0, 4);
+    newArrivals = ((arrivals as Book[]) ?? []).slice(0, 5);
+    staffPicks = ((inStock as Book[]) ?? [])
+      .filter((b) => !newArrivals.some((n) => n.id === b.id))
+      .slice(0, 5);
+    if (staffPicks.length < 5) {
+      staffPicks = [
+        ...staffPicks,
+        ...list
+          .filter(
+            (b) =>
+              !staffPicks.some((s) => s.id === b.id) &&
+              !newArrivals.some((n) => n.id === b.id)
+          )
+          .slice(0, 5 - staffPicks.length),
+      ];
+    }
     settings = store;
 
     const allCats = (cats ?? []) as ShelfCategory[];
@@ -244,7 +282,23 @@ export default async function HomePage() {
         <FeaturedHeroCarousel slides={heroSlides} />
       ) : null}
 
-      <section className="bg-[color:var(--sf-bg)] py-7 md:py-18">
+      <CuratedShelf
+        eyebrow="Just in"
+        title="New arrivals"
+        href="/books?sort=newest"
+        books={newArrivals.map((b) => ({
+          id: b.id,
+          title: b.title,
+          slug: b.slug,
+          brand: b.brand,
+          price_btn: b.price_btn,
+          cover_public_id: b.cover_public_id,
+          isbn_13: b.isbn_13,
+          barcode: b.barcode,
+        }))}
+      />
+
+      <section className="bg-[color:var(--sf-surface)] py-7 md:py-18">
         <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -298,7 +352,23 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[color:var(--sf-surface)] py-7 md:py-16">
+      <CuratedShelf
+        eyebrow="Staff shelf"
+        title="Worth picking up"
+        href="/books?availability=in_stock"
+        books={staffPicks.map((b) => ({
+          id: b.id,
+          title: b.title,
+          slug: b.slug,
+          brand: b.brand,
+          price_btn: b.price_btn,
+          cover_public_id: b.cover_public_id,
+          isbn_13: b.isbn_13,
+          barcode: b.barcode,
+        }))}
+      />
+
+      <section className="bg-[color:var(--sf-bg)] py-7 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6">
           <div className="text-center">
             <p className="sf-eyebrow">Popular</p>
@@ -311,7 +381,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[color:var(--sf-bg)] py-7 md:py-16">
+      <EventsStrip />
+
+      <section className="bg-[color:var(--sf-surface)] py-7 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 md:px-6">
           <p className="sf-eyebrow">Explore DSB</p>
           <h2 className="sf-title mt-2">Story, schools &amp; partnerships</h2>
