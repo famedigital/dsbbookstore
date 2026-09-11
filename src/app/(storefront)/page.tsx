@@ -17,6 +17,10 @@ import { EventsStrip } from "@/components/storefront/events-strip";
 import { getStorefrontTheme } from "@/lib/storefront/get-theme";
 import { INSTITUTIONAL_SECTIONS } from "@/lib/storefront/institutional";
 import { formatBtn, availabilityLabel } from "@/lib/erp/format";
+import {
+  hasStoredCover,
+  withCoversFirst,
+} from "@/lib/storefront/cover-quality";
 import type { Book } from "@/types/erp";
 
 export default async function HomePage() {
@@ -39,14 +43,18 @@ export default async function HomePage() {
       { data: shelfRows },
       { data: arrivals },
       { data: inStock },
+      { data: featuredRows },
     ] = await Promise.all([
       supabase
         .from("books")
         .select("*")
         .eq("is_published", true)
         .eq("product_kind", "book")
+        .not("cover_public_id", "is", null)
+        .neq("cover_public_id", "")
+        .not("cover_public_id", "ilike", "%.svg")
         .order("updated_at", { ascending: false })
-        .limit(12),
+        .limit(48),
       supabase
         .from("store_settings")
         .select("store_name, opening_hours")
@@ -64,24 +72,44 @@ export default async function HomePage() {
         )
         .eq("is_published", true)
         .eq("product_kind", "book")
+        .not("cover_public_id", "is", null)
+        .neq("cover_public_id", "")
+        .not("cover_public_id", "ilike", "%.svg")
         .order("updated_at", { ascending: false })
-        .limit(48),
+        .limit(80),
       supabase
         .from("books")
         .select("*")
         .eq("is_published", true)
         .eq("product_kind", "book")
+        .not("cover_public_id", "is", null)
+        .neq("cover_public_id", "")
+        .not("cover_public_id", "ilike", "%.svg")
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(20),
       supabase
         .from("books")
         .select("*")
         .eq("is_published", true)
         .eq("product_kind", "book")
+        .not("cover_public_id", "is", null)
+        .neq("cover_public_id", "")
+        .not("cover_public_id", "ilike", "%.svg")
         .in("availability_status", ["in_stock", "low_stock"])
         .gt("stock_qty", 0)
         .order("updated_at", { ascending: false })
-        .limit(10),
+        .limit(20),
+      supabase
+        .from("books")
+        .select("*")
+        .eq("is_published", true)
+        .eq("product_kind", "book")
+        .eq("is_featured", true)
+        .not("cover_public_id", "is", null)
+        .neq("cover_public_id", "")
+        .not("cover_public_id", "ilike", "%.svg")
+        .order("updated_at", { ascending: false })
+        .limit(12),
     ]);
 
     let list = (books as Book[]) ?? [];
@@ -91,23 +119,36 @@ export default async function HomePage() {
         .select("*")
         .eq("is_published", true)
         .order("updated_at", { ascending: false })
-        .limit(24);
-      list = ((fallback as Book[]) ?? []).filter(
-        (b) => !b.product_kind || b.product_kind === "book"
+        .limit(48);
+      list = withCoversFirst(
+        ((fallback as Book[]) ?? []).filter(
+          (b) => !b.product_kind || b.product_kind === "book"
+        ),
+        24
       );
     }
 
-    featured = list.slice(0, 4);
-    newArrivals = ((arrivals as Book[]) ?? []).slice(0, 5);
-    staffPicks = ((inStock as Book[]) ?? [])
-      .filter((b) => !newArrivals.some((n) => n.id === b.id))
-      .slice(0, 5);
+    const featuredPool = withCoversFirst(
+      ((featuredRows as Book[]) ?? []).length
+        ? (featuredRows as Book[])
+        : list,
+      8
+    );
+    featured = featuredPool.slice(0, 4);
+    newArrivals = withCoversFirst((arrivals as Book[]) ?? [], 5);
+    staffPicks = withCoversFirst(
+      ((inStock as Book[]) ?? []).filter(
+        (b) => !newArrivals.some((n) => n.id === b.id)
+      ),
+      5
+    );
     if (staffPicks.length < 5) {
       staffPicks = [
         ...staffPicks,
         ...list
           .filter(
             (b) =>
+              hasStoredCover(b.cover_public_id) &&
               !staffPicks.some((s) => s.id === b.id) &&
               !newArrivals.some((n) => n.id === b.id)
           )
@@ -148,7 +189,7 @@ export default async function HomePage() {
             "books(id, title, slug, subtitle, description, price_btn, cover_public_id, isbn_13, barcode, brand, publisher_name, published_at, is_published, product_kind)"
           )
           .eq("category_id", c.id)
-          .limit(16);
+          .limit(40);
         type CatBook = {
           id: string;
           title: string;
@@ -178,9 +219,11 @@ export default async function HomePage() {
           .filter(
             (b) =>
               b.is_published !== false &&
-              (!b.product_kind || b.product_kind === "book")
+              (!b.product_kind || b.product_kind === "book") &&
+              hasStoredCover(b.cover_public_id)
           );
 
+        const pick = booksInCat[0];
         return {
           cat: c,
           books: booksInCat.slice(0, 8).map((b) => ({
@@ -193,20 +236,20 @@ export default async function HomePage() {
             barcode: b.barcode ?? null,
             categoryIds: [c.id],
           })),
-          heroCandidate: booksInCat[0]
+          heroCandidate: pick
             ? ({
-                id: booksInCat[0].id,
-                title: booksInCat[0].title,
-                slug: booksInCat[0].slug,
-                subtitle: booksInCat[0].subtitle ?? null,
-                description: booksInCat[0].description ?? null,
-                price_btn: booksInCat[0].price_btn,
-                cover_public_id: booksInCat[0].cover_public_id,
-                isbn_13: booksInCat[0].isbn_13 ?? null,
-                barcode: booksInCat[0].barcode ?? null,
-                brand: booksInCat[0].brand ?? null,
-                publisher_name: booksInCat[0].publisher_name ?? null,
-                published_at: booksInCat[0].published_at ?? null,
+                id: pick.id,
+                title: pick.title,
+                slug: pick.slug,
+                subtitle: pick.subtitle ?? null,
+                description: pick.description ?? null,
+                price_btn: pick.price_btn,
+                cover_public_id: pick.cover_public_id,
+                isbn_13: pick.isbn_13 ?? null,
+                barcode: pick.barcode ?? null,
+                brand: pick.brand ?? null,
+                publisher_name: pick.publisher_name ?? null,
+                published_at: pick.published_at ?? null,
                 categoryName: c.name,
                 categorySlug: c.slug,
               } satisfies HeroSlide)
